@@ -1,0 +1,36 @@
+# SahFund - project root
+# Note: the git repository root is the parent directory (D:/project/nextjs),
+# so this file only governs paths under SahFund/.
+
+# dependencies
+node_modules/
+
+# env files & local secrets (AGENTS.md section 9) - never commit
+.env*
+!.env.example
+.dev.vars
+!.dev.vars.example
+
+# Neon CLI project link (project/branch ids only, no secrets)
+.neon
+
+# Cloudflare Workers / OpenNext build output
+.wrangler/
+.open-next/
+.vercel/
+
+# OS & editor junk
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# local agent tooling config (machine-local; excluded by user request)
+# NOTE: AGENTS.md is deliberately NOT ignored - it is project documentation and stays tracked.
+skills-lock.json
+opencode.jsonc
+.opencode/
+.agents/

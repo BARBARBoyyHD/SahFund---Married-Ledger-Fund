@@ -10,12 +10,13 @@
     "binding": "ASSETS",
   },
   // D1 is the only datastore (ITA ADR-13). The binding is configuration, not a secret.
-  // database_id values are printed by `wrangler d1 create sahfund` / `... sahfund-preview`.
+  // The dev database (`sahfunddb`) was created in the Cloudflare dashboard; its id is below.
+  // `wrangler d1 create sahfund-preview` is still needed for the preview database.
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "sahfund",
-      "database_id": "REPLACE_WITH_ID_FROM_wrangler-d1-create-sahfund",
+      "database_name": "sahfunddb",
+      "database_id": "a7495b0b-f639-4abd-a059-16512d5b5485",
       "migrations_dir": "drizzle",
     },
   ],

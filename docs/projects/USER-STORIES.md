@@ -32,7 +32,7 @@ Roles are equal in capability unless a story says otherwise: BRD §4 does not re
 
 ## 3. Scope guard — v1.0 exclusions (no stories written)
 
-Per BRD §3 / AGENTS.md §10, the following are **excluded** and deliberately have no stories: OCR / scanned-photo statements · screenshot or notification capture · bank API integration · subscription or recurring billing · multi-currency · any storage of documents, images, or avatars · LLM-based categorisation · native mobile apps · digital invitations, guest list, RSVP, seating chart · vendor marketplace/directory/payments · roles beyond owner/member · wedding-organizer multi-client mode · KV/R2/D1/server-side session cache.
+Per BRD §3 / AGENTS.md §10, the following are **excluded** and deliberately have no stories: OCR / scanned-photo statements · screenshot or notification capture · bank API integration · subscription or recurring billing · multi-currency · any storage of documents, images, or avatars · LLM-based categorisation · native mobile apps · digital invitations, guest list, RSVP, seating chart · vendor marketplace/directory/payments · roles beyond owner/member · wedding-organizer multi-client mode · KV/R2/server-side session cache.
 
 Notes:
 
@@ -160,10 +160,11 @@ Notes:
 **As a** partner (founder), **I want** to create our shared workspace with a name and optional wedding date and budget target, **so that** both of us track one fund.
 
 - **Given** the workspace form, **When** I submit a name (e.g. "Nikah Ayu & Budi") plus optional `weddingDate` and `budgetTarget`, **Then** the workspace is created, I become its only member (owner), and a 10-character pocket code (4 digits + 3 letters + 3 alphanumeric, e.g. `4821kPz7xQ`) is returned.
+- **Given** that I already belong to a workspace (as owner or member), **When** I submit the create-workspace form, **Then** the attempt is refused with a clear Bahasa Indonesia message and no second workspace and no second membership row exist afterwards (one workspace per user — enforced by the database, `UNIQUE (members.userId)`, not by a handler check).
 - **Given** a created workspace, **When** no wedding date was supplied, **Then** the dashboard prompts me to set it rather than showing a broken forecast.
 - **Given** a `budgetTarget`, **When** it is stored, **Then** it is held as an integer minor-unit amount (no floats).
 
-**Source:** BRD §4 FR-02; BRD §3 In Scope; BRD §5 NFR-03.
+**Source:** BRD §4 FR-02 (including the one-workspace-per-user rule); BRD §3 In Scope; BRD §5 NFR-03.
 
 ### US-06 — Join by pocket code
 
@@ -171,11 +172,11 @@ Notes:
 
 - **Given** a valid pocket code (10 characters: 4 digits + 3 letters + 3 alphanumeric), **When** I submit it while signed in, **Then** a membership row is created and I see the shared dashboard.
 - **Given** a malformed code (wrong length or wrong structure, e.g. letters where digits belong), **When** I submit it, **Then** an inline Bahasa Indonesia error rejects the format before any lookup or write occurs.
-- **Given** a workspace that already has two members, **When** anyone submits the code (even concurrently), **Then** the third join is refused with a clear Bahasa Indonesia message — never a silent failure or a duplicate membership.
-- **Given** I am already a member of that workspace, **When** I submit the code again, **Then** I am told I am already a member and no duplicate membership row is created.
+- **Given** a workspace that already has two members, **When** anyone submits the code (even concurrently), **Then** the third join is refused with a clear Bahasa Indonesia message — never a silent failure or a duplicate membership. The refusal is guaranteed by the database (`UNIQUE (members.workspaceId, role)`), so it holds even when two joins race: at most two membership rows can ever exist for the workspace.
+- **Given** I am already a member of any workspace — this one or a different one — **When** I submit a code, **Then** I am told I already belong to a workspace and no second membership row is created (one workspace per user, `UNIQUE (members.userId)`). Re-submitting my own workspace's code says "already a member of this workspace"; any other code says I already belong elsewhere.
 - **Given** an unknown or rotated code, **When** I submit it, **Then** I receive a clear "code not valid" message.
 
-**Source:** BRD §4 FR-02 (two-member cap, clear message; pocket code format). Already-member behaviour derives from the `UNIQUE (workspaceId, userId)` constraint (ITA §5).
+**Source:** BRD §4 FR-02 (two-member cap and one-workspace-per-user rule, both DB-enforced; clear messages; pocket code format). Already-member behaviour derives from the `UNIQUE (workspaceId, userId)` and `UNIQUE (userId)` constraints (ITA §5); the concurrent cap from `UNIQUE (workspaceId, role)` — the handler only maps the violated constraint to the message, it does not count members.
 
 ### US-07 — Rotate the invite code
 
@@ -215,7 +216,8 @@ Notes:
 - **Given** an invite email, **When** I open the join link and sign in, **Then** the pocket code is pre-filled and one confirmation creates my membership and shows the shared dashboard.
 - **Given** an email that failed to send (US-52), **When** my partner copies the pocket code or join link and shares it with me directly, **Then** I can join with it exactly as with the emailed link — the code alone is the credential.
 - **Given** a code that has been rotated since the email was sent, **When** I submit it, **Then** I get the clear "code not valid" message of US-06, not an error dump or a broken screen.
-- **Given** a workspace that already has two members, **When** I open the link and confirm, **Then** the join is refused with the clear full-workspace message of US-06.
+- **Given** a workspace that already has two members, **When** I open the link and confirm, **Then** the join is refused with the clear full-workspace message of US-06 (DB-enforced — `UNIQUE (members.workspaceId, role)`).
+- **Given** that I already belong to a workspace, **When** I open the join link for a different workspace and confirm, **Then** the join is refused with the clear "you already belong to a workspace" message of US-06 and no second membership row is created.
 - **Given** an invite email, **When** I read it, **Then** it carries no financial data and no attachment — only the code, the link, and explanatory copy.
 
 **Source:** BRD §4 FR-02 (join), FR-13 (invite email content, fallback path); BRD §5 NFR-01.
@@ -683,7 +685,7 @@ Notes:
 | Requirement | Stories |
 |---|---|
 | BRD FR-01 Account & Session | US-01, US-02, US-03, US-04, US-55 (auth page) |
-| BRD FR-02 Workspace & Invite | US-05, US-06, US-07, US-08, US-53 |
+| BRD FR-02 Workspace & Invite (incl. one workspace per user) | US-05, US-06, US-07, US-08, US-53 |
 | BRD FR-03 Statement Import | US-09, US-10, US-11, US-12, US-13 |
 | BRD FR-04 Reconciliation Gate | US-14, US-15, US-16, US-17 |
 | BRD FR-05 Ledger | US-18, US-19, US-20, US-21 |
@@ -720,7 +722,7 @@ Nothing below was silently resolved into a story; each item flags where the docs
 2. **Double-count UX undefined (B-2).** FR-09 says a payment counted twice as a transaction and as commitment `paid` "must be visibly reconciled" — what the UI shows, and whether totals exclude the duplicate until resolved, is unspecified. US-30 states only the guarantee (never silently double-counted, never silently dropped).
 3. **Purchase mechanism undecided (B-3).** BRD FR-12 says "one-time purchase" with no provider; ITA §6 says "Lynk.id now, Midtrans later — signed webhook or license code"; PEP M4 allows "license code or Lynk.id order grant" and R5 makes the decision a day-5 risk. US-37 specifies the outcome (idempotent grant, one-time charge) and is provider-neutral. No conflict with the no-subscription exclusion.
 4. **Share-link TTL unspecified (B-4).** FR-11 requires "expiring" links but sets no default lifetime. US-32/US-34 cover creation and revocation; the default expiry needs a value.
-5. **Account-deletion side effects undefined (B-5).** §3 promises "account and workspace deletion", but FR-12 only specifies *workspace* deletion. What happens when a non-owner member deletes their account, or an owner deletes their account while the workspace has a second member or a paid entitlement, is unspecified (ITA §5 ties retention to workspace deletion). US-40 flags the requirement that the path be explicit rather than inventing one.
+5. **Account-deletion side effects undefined (B-5).** §3 promises "account and workspace deletion", but FR-12 only specifies *workspace* deletion. What happens when a non-owner member deletes their account, or an owner deletes their account while the workspace has a second member or a paid entitlement, is unspecified (ITA §5 ties retention to workspace deletion). **More acute since one-workspace-per-user (FR-02):** deleting an account removes the user's *only* membership (`UNIQUE (members.userId)` frees the slot) — so a surviving owner is suddenly alone and the workspace can accept a new join, while a deleting *member* leaves an owner mid-wedding with no partner and no replacement flow defined. US-40 flags the requirement that the path be explicit rather than inventing one.
 6. **Edit paths and owner-only actions inferred (B-6).** FR-02 defines creating `weddingDate`/`budgetTarget` and rotating the invite code, but not editing them later, nor explicitly restricting rotation/deletion to the owner (the two-member cap makes owner-only the natural reading). US-07, US-08, US-39 mark these as interpretations.
 7. **Reconciliation confirmation — interpretation applied (B-7).** FR-04 ("confirm before treated as final", "never silently included") and ITA §2 ("excluded from trusted totals until the user confirms") are read together in US-17: excluded until explicit confirmation; after confirmation included *and* still visibly flagged. Consistent, but worth a product-owner nod.
 8. **XLSX vs "generic CSV path" (B-8).** §3 In Scope allows "CSV/Excel", FR-03 accepts `.xlsx`, while the out-of-scope list and PEP cut order say "generic CSV path". Read as one generic adapter path covering both (US-10); not treated as a conflict.
@@ -730,3 +732,4 @@ Nothing below was silently resolved into a story; each item flags where the docs
 12. **Terminology: "pocket code" vs "pocket" (B-12).** BRD reserves *pocket* for a Bank Jago shared pocket inside a statement (FR-03, glossary), while the workspace is the app's joinable unit. The approved requirement names the workspace invite code the **pocket code**; the docs adopt that as user-facing copy (glossary, FR-02, FR-13) and map it explicitly to `workspaces.inviteCode`. Worth a product-owner nod that users will not confuse "join the pocket" with choosing an import pocket.
 13. **Landing and 404 pages are scope-inferred (B-13).** BRD §3 In Scope and §4 name no landing page and no not-found page; §7 Phase 4 lists the pricing page, privacy policy, and terms — not a marketing entry page. US-54 and US-56 are written as the minimum public entry point and dead-end handling: US-54 constrains every claim to §1/FR-12 (no invented pricing or features), US-56 covers only the not-found state and defers all data-failure behaviour to US-43. Rationale is inferential — §2 objective 4 (20 paid workspaces at CAC ≤ Rp 60.000) presupposes a public entry point, and NFR-07 forbids blank screens. *Needs a product-owner nod that both pages are v1.0 scope; if either is cut, US-54/US-56 retire and the auth page (US-55) becomes the only front door.*
 14. **Auth page layout unspecified (B-14).** FR-01 defines the sign-up/sign-in *endpoints* and US-03 anchors the redirect at `/login`, but no document specifies whether the UI is one page with two modes or two separate routes. US-55 chooses a single `/login` page with a visible mode switch (one story, not two, because the fields, validation, session, and error behaviour are identical in both modes). Revisit only the route split if desired — US-01/US-02 behaviour is untouched either way.
+15. **Two-member cap is coupled to the role set (B-15).** The cap is now a DB constraint — `UNIQUE (members.workspaceId, role)` with `role ∈ {owner, member}` (ITA §5, ERD §5) — which means PEP §11's "membership limit moves to v1.1 with roles" requires redesigning that constraint in the same change: a third role value would either break the CHECK or silently break the cap. Flagged so the v1.1 roles work treats constraint and roles as one unit. Also stated honestly: the constraint guarantees *at most two rows*, not which of two concurrent joiners wins — the loser only gets the clear message because the handler maps SQLite's unique-constraint violation (`SQLITE_CONSTRAINT_UNIQUE`, surfaced as `UNIQUE constraint failed: …`) to it.

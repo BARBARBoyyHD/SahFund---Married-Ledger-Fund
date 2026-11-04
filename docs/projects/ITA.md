@@ -34,9 +34,9 @@ Technical non-goals, mirroring BRD §3:
                 │ JSON: normalised rows + reconciliation
                 ▼
 ┌────────────────────────────────────┐         ┌──────────────────────┐
-│ Next.js on Cloudflare Workers      │  SQL    │ Neon Postgres        │
-│  auth · workspaces · imports       │────────▶│ ap-southeast-1       │
-│  categories · reports · share      │◀────────│ PITR backups         │
+│ Next.js on Cloudflare Workers      │ binding │ Cloudflare D1        │
+│  auth · workspaces · imports       │────────▶│ SQLite · env.DB      │
+│  categories · reports · share      │◀────────│ Time Travel ≤ 30 d   │
 └───────────────┬────────────────────┘         └──────────────────────┘
                 │
                 ▼
@@ -46,9 +46,9 @@ Technical non-goals, mirroring BRD §3:
 
 **Request flow.** Static assets are served from the `ASSETS` binding. Every page is a server component that resolves the session through Better Auth before rendering. Mutations happen in route handlers: the browser posts already-extracted rows (never the document), Zod validates the payload, a `dedupe_hash` filters rows already stored for that workspace, and the import plus its rows are written in a single batch. Reconciliation is computed on the client, re-checked on the server, and stored on the import row.
 
-**Where state lives.** All durable state is in Postgres: users, sessions, workspaces, members, categories, imports, transactions, commitments. There is no KV, no R2, no D1, no server-side session cache. The Worker is stateless, so any instance can serve any request.
+**Where state lives.** All durable state is in Cloudflare D1 (SQLite): users, sessions, workspaces, members, categories, imports, transactions, commitments. There is no KV, no R2, no server-side session cache. Portability comes from discipline, not an abstraction layer: every access goes through Drizzle's query builder, dialect-specific types live only in `src/lib/db/schema.ts`, and `src/lib/db/index.ts` is the single swap point (rules P1–P8 in `AGENTS.md` §1). The Worker is stateless, so any instance can serve any request.
 
-**Failure behaviour.** If Postgres is unreachable the app returns an explicit 503 with a retry message — never a blank dashboard. A parse failure surfaces the offending line in the browser and persists nothing. A reconciliation failure still stores the import, but marks it `reconciled = false` and excludes it from trusted totals until the user confirms.
+**Failure behaviour.** If D1 is unreachable (or the `env.DB` binding is missing) the app returns an explicit 503 with a retry message — never a blank dashboard. A parse failure surfaces the offending line in the browser and persists nothing. A reconciliation failure still stores the import, but marks it `reconciled = false` and excludes it from trusted totals until the user confirms.
 
 ---
 
@@ -64,9 +64,9 @@ Versions verified against the npm registry on 2026-Nov-02. Pin exact versions in
 | Framework | Next.js | 16.4.3 | App Router server components keep session checks server-side; `proxy.ts` replaces `middleware.ts` in v16 |
 | Hosting adapter | `@opennextjs/cloudflare` | 1.20.15 | Peer range `next >=15.5.28 <16 \|\| >=16.4.1`; 16.4.3 is inside it, 16.4.0 is not |
 | Deploy CLI | `wrangler` | 4.156.1 | Peer `^4.148.0`; versions + rollback built in |
-| Database | Neon Postgres | serverless driver 1.2.0 | Managed Postgres with PITR; HTTP driver avoids connection exhaustion on Workers |
-| ORM | Drizzle ORM / Kit | 0.45.4 / 0.31.11 | SQL-first, no engine binary, edge-compatible |
-| Auth | Better Auth | 1.7.15 | Sessions in our own Postgres; no per-user identity cost |
+| Database | Cloudflare D1 (SQLite) | `drizzle-orm/d1` (with Drizzle) | Managed SQLite on the Worker's own platform; the `env.DB` binding removes connection handling and database credentials from the runtime entirely; free tier (5M rows read/day, 100k rows written/day, 5 GB storage) covers v1.0 with large headroom |
+| ORM | Drizzle ORM / Kit | 0.45.4 / 0.31.11 | SQL-first, no engine binary, edge-compatible; sqlite dialect (ADR-13) |
+| Auth | Better Auth | 1.7.15 | Sessions in our own D1 database; no per-user identity cost |
 | UI | Tailwind CSS | 4.3.3 | CSS-first config, no JS config file to drift |
 | Components | shadcn CLI | 4.23.0 | Copy-in components, no runtime dependency to patch |
 | Icons | lucide-react | 1.66.0 | Tree-shaken, consistent set |
@@ -90,8 +90,8 @@ Versions verified against the npm registry on 2026-Nov-02. Pin exact versions in
 | `src/proxy.ts` | Redirect unauthenticated `/dashboard/*` requests; **not** an authorization boundary | `better-auth/cookies` |
 | `src/lib/auth.ts` | Better Auth configuration, providers, session lifetime | `lib/db` |
 | `src/lib/session.ts` | `getSession()` / `requireSession()` used by every protected page | `lib/auth` |
-| `src/lib/db/schema.ts` | Drizzle schema: auth tables + domain tables | — |
-| `src/lib/db/index.ts` | Lazy Neon HTTP client singleton | `@neondatabase/serverless` |
+| `src/lib/db/schema.ts` | Drizzle schema: auth tables + domain tables (sqlite dialect — the only file with dialect types) | — |
+| `src/lib/db/index.ts` | Lazy D1 client singleton — the single swap point | `drizzle-orm/d1`, the `env.DB` binding |
 | `src/adapters/*` | `StatementSource` implementations (Jago, generic CSV) | core types |
 | `src/core/reconcile.ts` | Balance-chain, totals, duplicate checks | core types |
 | `src/core/money.ts` | Rupiah parsing and formatting (ID and EN grouping) | — |
@@ -121,24 +121,24 @@ An adapter is complete when it implements this interface and passes the shared f
 
 ## 5. Data Architecture
 
-Money is stored as `BIGINT` **minor units** (1/100 rupiah). Floating point is banned from storage and aggregation.
+Money is stored as 64-bit integer **minor units** (1/100 rupiah) — SQLite `INTEGER` via Drizzle `integer({ mode: 'bigint' })`. Floating point is banned from storage and aggregation.
 
 | Entity | Store | Key fields | Notes |
 |--------|-------|------------|-------|
-| `user` | Postgres | id, email (unique), name, emailVerified | Better Auth table |
-| `session` | Postgres | token (unique), userId, expiresAt | Cookie holds the token only |
-| `account` | Postgres | providerId, accountId, userId, password | Credential or OAuth link |
-| `verification` | Postgres | identifier, value, expiresAt | Reserved for email verification |
-| `workspaces` | Postgres | id, ownerId, name, weddingDate, budgetTargetMinor, inviteCode (unique), plan | One couple per workspace; `ownerId` UNIQUE — a user owns at most one workspace |
-| `members` | Postgres | workspaceId, userId, role | Unique (workspaceId, userId); Unique (userId) — one workspace per user; Unique (workspaceId, role) with role ∈ {owner, member} — max 2 per workspace; all DB-enforced (see constraints below) |
-| `categories` | Postgres | workspaceId, name, kind, budgetMinor, sort | Unique (workspaceId, name) |
-| `imports` | Postgres | workspaceId, sourceId, period, pocketName, txCount, reconciled, issues (jsonb) | One row per upload |
-| `transactions` | Postgres | workspaceId, memberId?, categoryId?, occurredOn, description, amountMinor, balanceMinor, direction, ref, source, importId?, dedupeHash | Unique (workspaceId, dedupeHash) |
-| `commitments` | Postgres | workspaceId, vendor, categoryId?, totalMinor, paidMinor, dueOn, status | Contracts, not payments |
+| `user` | D1 | id, email (unique), name, emailVerified | Better Auth table |
+| `session` | D1 | token (unique), userId, expiresAt | Cookie holds the token only |
+| `account` | D1 | providerId, accountId, userId, password | Credential or OAuth link |
+| `verification` | D1 | identifier, value, expiresAt | Reserved for email verification |
+| `workspaces` | D1 | id, ownerId, name, weddingDate, budgetTargetMinor, inviteCode (unique), plan | One couple per workspace; `ownerId` UNIQUE — a user owns at most one workspace |
+| `members` | D1 | workspaceId, userId, role | Unique (workspaceId, userId); Unique (userId) — one workspace per user; Unique (workspaceId, role) with role ∈ {owner, member} — max 2 per workspace; all DB-enforced (see constraints below) |
+| `categories` | D1 | workspaceId, name, kind, budgetMinor, sort | Unique (workspaceId, name) |
+| `imports` | D1 | workspaceId, sourceId, period, pocketName, txCount, reconciled, issues (JSON as TEXT — `text({ mode: 'json' })`) | One row per upload |
+| `transactions` | D1 | workspaceId, memberId?, categoryId?, occurredOn, description, amountMinor, balanceMinor, direction, ref, source, importId?, dedupeHash | Unique (workspaceId, dedupeHash) |
+| `commitments` | D1 | workspaceId, vendor, categoryId?, totalMinor, paidMinor, dueOn, status | Contracts, not payments |
 
 Indexes: `transactions(workspaceId, occurredOn)`, `transactions(categoryId)`, `session(userId)`, `imports(workspaceId, createdAt)`, `commitments(workspaceId, dueOn)`.
 
-`dedupe_hash = sha256(workspaceId | date | time | amountMinor | balanceMinor | ref)`. Re-importing an overlapping month is a no-op rather than a doubled balance.
+`dedupe_hash = sha256(workspaceId | date | time | amountMinor | balanceMinor | ref)`, computed app-side in exactly one pure function — SQLite has no `sha256()`. Re-importing an overlapping month is a no-op rather than a doubled balance.
 
 **Membership constraints** (this is the schema spec for the future `src/lib/db/schema.ts`; enforcement philosophy per `AGENTS.md` §3 — the constraint is the source of truth, the handler only produces the clear message):
 
@@ -148,15 +148,15 @@ Indexes: `transactions(workspaceId, occurredOn)`, `transactions(categoryId)`, `s
 | One owner per workspace | `members` role is restricted to `{owner, member}` (**CHECK constraint**), and `members` **UNIQUE (workspaceId, role)** guarantees at most one `owner` row per workspace. |
 | Max two members per workspace (`BRD FR-02`) | The same **UNIQUE (workspaceId, role)**: at most one `owner` row + at most one `member` row = at most two rows. A join always inserts `role = 'member'`, so when the member slot is taken the insert fails on the unique index. |
 
-Why this mechanism over a count or a partial index: `neon-http` has no interactive transactions (ADR-02), so a "count members, then insert" check is a read-then-write race that cannot be made safe in application code. A single `INSERT` decided by the unique index needs no transaction — two concurrent joins for the last slot both fire, exactly one succeeds, the loser receives unique-violation `23505`, and the handler maps that specific constraint name to the clear "workspace is full" message. A count-based CHECK cannot exist (CHECK cannot see other rows), and a partial index counting rows is not expressible; a slot-column variant would work but adds a column that `role` already represents.
+Why this mechanism over a count or a partial index: D1 has no interactive transactions (ADR-13), so a "count members, then insert" check is a read-then-write race that cannot be made safe in application code. A single `INSERT` decided by the unique index needs no transaction — two concurrent joins for the last slot both fire, exactly one succeeds, the loser receives SQLite's unique-constraint violation (`SQLITE_CONSTRAINT_UNIQUE`, surfaced by D1/Drizzle as `UNIQUE constraint failed: …`), and the handler maps that specific constraint to the clear "workspace is full" message. The UNIQUE and CHECK constraints themselves are unchanged from the original design — only the error code the handler detects changed. A count-based CHECK cannot exist (CHECK cannot see other rows), and a partial index counting rows is not expressible; a slot-column variant would work but adds a column that `role` already represents.
 
 Honest limits, stated deliberately: the database guarantees *at most two rows*, not *which* of two concurrent joiners wins; and the user-facing clarity still depends on the handler translating each violated constraint (`userId` → "you already belong to a workspace", `workspaceId+role` → "the pocket is full") rather than surfacing a raw SQL error. If v1.1 introduces further roles (`PEP §11`), `UNIQUE (workspaceId, role)` must be redesigned together with the role set — it is correct exactly as long as role ∈ {owner, member}.
 
 **Pocket code** (`workspaces.inviteCode`). Exactly 10 characters in fixed order — 4 digits, then 3 letters, then 3 alphanumeric — e.g. `4821kPz7xQ`. Generated server-side from a cryptographically secure random source; a collision against the existing `UNIQUE` constraint is resolved by regenerating, never by relaxing the constraint. It is the join credential for the workspace, so it is never written to logs or analytics (§11.9) and is rotated rather than edited in place.
 
-**Migrations.** `drizzle-kit generate` produces committed SQL; `drizzle-kit migrate` applies it to Neon. Expand/contract only: add nullable columns and backfill before making anything required, so a Worker rollback never meets an incompatible schema.
+**Migrations.** `drizzle-kit generate` (sqlite dialect) produces committed SQL; `wrangler d1 migrations apply` applies it (`--local` for dev, `--remote` for production). Expand/contract only: add nullable columns and backfill before making anything required, so a Worker rollback never meets an incompatible schema.
 
-**Retention.** Transactions and imports live until the workspace is deleted. Deletion cascades from `workspaces`; Neon PITR expires within the BRD's 30-day purge window. No documents exist to retain.
+**Retention.** Transactions and imports live until the workspace is deleted. Deletion cascades from `workspaces` (D1 enforces foreign keys, so `ON DELETE CASCADE` behaves as designed). D1's always-on Time Travel keeps up to 30 days of history (Workers Paid; 7 days on the Free plan), matching the BRD's 30-day purge window: once the history rolls off, a deleted workspace cannot be restored. No documents exist to retain.
 
 ---
 
@@ -164,7 +164,7 @@ Honest limits, stated deliberately: the database guarantees *at most two rows*, 
 
 | External | Purpose | Auth | Failure handling |
 |----------|---------|------|------------------|
-| Neon Postgres | All persistence | `DATABASE_URL` secret | Explicit 503 + retry; `/api/health` reports `db: down` |
+| Cloudflare D1 | All persistence | Workers binding `env.DB` (config in `wrangler.jsonc`, not a secret) | Explicit 503 + retry; `/api/health` reports `db: down` |
 | Cloudflare Workers | Compute, static assets, edge rate limiting | Account API token in CI | Deploy fails loudly; `wrangler rollback` to the previous version |
 | Better Auth | Sessions, password hashing | Internal, no third party | Unauthenticated → redirect; error → generic message, details to logs |
 | Payment provider (Lynk.id now, Midtrans later) | One-time entitlement | Signed webhook or license code | Idempotent grant keyed by order id; retry on 5xx |
@@ -177,7 +177,7 @@ No bank API exists for account information, so there is deliberately no integrat
 
 ## 7. Security & Secrets
 
-- Production secrets via `wrangler secret put` (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`); local development via `.dev.vars`; both gitignored. CI holds a Cloudflare API token scoped to this Worker only. The Resend from-domain is verified in the Resend console and configured as a constant, not a secret.
+- Production secrets via `wrangler secret put` (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`); local development via `.dev.vars`; both gitignored. The database is not a secret: D1 arrives as the `env.DB` binding declared in `wrangler.jsonc`, so there is no connection-string secret to store or leak. CI holds a Cloudflare API token scoped to this Worker only. The Resend from-domain is verified in the Resend console and configured as a constant, not a secret.
 - Sessions are `httpOnly`, `Secure` in production, `SameSite=Lax`; the cookie carries the token, never the user record.
 - **Authorization is server-side.** Every protected page calls `requireSession()`; every route handler resolves the session before touching the database. `proxy.ts` only redirects — treating middleware as the gate is precisely the class of bug behind CVE-2025-29927.
 - Every query is scoped by workspace membership. A transaction id on its own is never sufficient; the handler verifies the caller belongs to the workspace that owns the row.
@@ -192,10 +192,12 @@ No bank API exists for account information, so there is deliberately no integrat
 | Concern | Approach | Target |
 |---------|----------|--------|
 | Performance | Parsing happens on the client, so the Worker only validates and writes; one batched insert per import | Import ≤ 5 s p95; dashboard ≤ 1.5 s p95 on 4G |
-| Scalability | Stateless Workers scale horizontally; Neon HTTP avoids pool exhaustion; no sticky sessions | 1,000 workspaces on the free/launch tiers |
+| Scalability | Stateless Workers scale horizontally; the D1 binding has no connection pool to exhaust and one `db.batch()` pays the per-request overhead once; no sticky sessions | 1,000 workspaces on Workers Paid (D1 usage included) |
 | Observability | Workers Logs + `wrangler tail`; structured JSON with route, status, workspace id; `/api/health`; Sentry optional | One place to answer "is it up and where did it fail" |
-| Portability | Standard Postgres + standard Node runtime; no proprietary data stores | Exit to another host ≤ 2 days |
-| Cost | Workers free tier, Neon free/launch, no object storage | ≤ US$20/month at 1,000 workspaces |
+| Portability | Data is plain SQLite (leave with `wrangler d1 export`); access goes through Drizzle with dialect types confined to `src/lib/db/schema.ts` and `src/lib/db/index.ts` as the single swap point — the Cloudflare-specific part is the binding, not the data | Exit to another host ≤ 2 days (swap = dialect import + client import + regenerate migrations) |
+| Cost | Workers Paid (US$5/month) with D1 usage included — 25B rows read, 50M rows written, 5 GB storage per month; no object storage | ≤ US$20/month at 1,000 workspaces |
+
+Development, CI, and the first users run inside the D1 Free tier (5M rows read/day, 100k rows written/day, 5 GB storage, 10 databases, 7-day Time Travel). Production moves to Workers Paid, where the D1 usage in the cost row above is included in the plan price.
 
 ---
 
@@ -203,12 +205,12 @@ No bank API exists for account information, so there is deliberately no integrat
 
 | Env | Purpose | Provisioning |
 |-----|---------|--------------|
-| dev | Local Next dev server with Cloudflare bindings; local Postgres branch | `pnpm dev`, `.dev.vars` |
-| preview | Per-PR Worker preview + Neon branch | OpenNext preview deploy in CI |
+| dev | Local Next dev server with Cloudflare bindings; local D1 (Miniflare, via wrangler) | `pnpm dev`, `.dev.vars` |
+| preview | Per-PR Worker preview bound to its own D1 database (`sahfund-preview` — never production) | OpenNext preview deploy in CI |
 | production | Workers deployment, `wedding-fund` service | `pnpm deploy`, secrets set once |
 | CI | Typecheck, unit tests, schema drift check, preview deploy | GitHub Actions |
 
-Neon branches give preview and test environments a real Postgres without copying production data.
+D1 has no branch or clone API yet (Time Travel restore is in-place only), so preview and test environments get their **own** D1 database with migrations applied from scratch — no environment ever reads production rows. Local development and integration tests run against a local D1 (Miniflare via wrangler) with zero data copying.
 
 ---
 
@@ -219,7 +221,7 @@ Neon branches give preview and test environments a real Postgres without copying
 | ADR-01 | Hosting | Cloudflare Workers via OpenNext | Vercel, Fly.io, Node VPS | Cost and edge latency; static assets free; user's platform choice |
 | ADR-02 | Postgres driver (**superseded by ADR-13**) | `neon-http` | `neon-serverless` WebSocket Pool, node-postgres | No connection pool to exhaust on Workers. Trade-off: no interactive transactions, so imports use `db.batch()` |
 | ADR-03 | ORM | Drizzle | Prisma, raw SQL | Edge-compatible, SQL-first, no engine binary in the bundle |
-| ADR-04 | Auth | Better Auth | Auth.js, Clerk, hand-rolled | Sessions in our own Postgres, no per-user fee, no identity lock-in |
+| ADR-04 | Auth | Better Auth | Auth.js, Clerk, hand-rolled | Sessions in our own database (D1), no per-user fee, no identity lock-in |
 | ADR-05 | Parsing location | Browser, deterministic | Server-side, LLM extraction | Document never leaves the device; exact arithmetic; zero per-document cost |
 | ADR-06 | Bank abstraction | Adapter registry + canonical `Statement` | Per-bank branches in UI | New bank = new module + fixtures, no core change |
 | ADR-07 | Money representation | Integer minor units | Floats, `numeric` strings | Exact sums and reconciliations |
@@ -228,7 +230,7 @@ Neon branches give preview and test environments a real Postgres without copying
 | ADR-10 | Styling | Tailwind v4 + shadcn | CSS modules, MUI | CSS-first config, components owned in-repo |
 | ADR-11 | Auth protection | Server-side guard on every route | Proxy-only | Proxy checks are bypassable; the guard is authoritative |
 | ADR-12 | Invite email | Resend, plain REST call from the route handler | SES, Postmark, SMTP relay, an email SDK | v1.0 sends one low-volume transactional stream (invitations), so a `fetch` to a REST API needs no new dependency and fits the existing `wrangler secret` pattern; failure is decoupled from the invite write, so Resend being down cannot lose an invite |
-| ADR-13 | Database | Cloudflare D1 (SQLite) via `drizzle-orm/d1` | Neon Postgres (supersedes ADR-02), Turso, Hyperdrive+Postgres, local SQLite file | Same platform as the Worker (ADR-01); free tier dwarfs v1.0 load; zero users now, so the swap costs nothing. Portability preserved by convention, not by a layer: all access through Drizzle's query builder, dialect types only in `schema.ts`, one client module as the swap point — a future swap = dialect + one import + regenerated migrations (AGENTS §1 P1–P8). Rejected: repository/abstraction layer (AGENTS §5 forbids speculative layers); Turso (second vendor, no benefit at this scale) |
+| ADR-13 | Database (**supersedes ADR-02**) | Cloudflare D1 (SQLite) via `drizzle-orm/d1` | Neon Postgres (the superseded ADR-02 choice), Turso, Hyperdrive+Postgres, local SQLite file | Same platform as the Worker (ADR-01); free tier dwarfs v1.0 load; zero users now, so the swap costs nothing. Portability preserved by convention, not by a layer: all access through Drizzle's query builder, dialect types only in `schema.ts`, one client module as the swap point — a future swap = dialect + one import + regenerated migrations (AGENTS §1 P1–P8). Rejected: repository/abstraction layer (AGENTS §5 forbids speculative layers); Turso (second vendor, no benefit at this scale). Trade-offs accepted: (1) lock-in sits in the access layer — the `env.DB` binding is Cloudflare-specific, but the data is plain SQLite and leaves with `wrangler d1 export`; (2) no interactive transactions (inherited from ADR-02), so `db.batch()` stays the only multi-statement primitive and is atomic — D1 rolls the sequence back on failure; (3) one D1 database is single-threaded, so throughput scales with query duration, not replicas — acceptable at v1.0 with batching and indexes; (4) no branch/clone API, so preview environments use separate disposable databases (§9) instead of copies of production; (5) Free-tier daily quotas (5M rows read, 100k rows written) — production runs on Workers Paid, where the included usage covers the 1,000-workspace target (§8) |
 
 ---
 
@@ -241,15 +243,15 @@ Neon branches give preview and test environments a real Postgres without copying
 1. **Next 16 renamed `middleware.ts` to `proxy.ts`**, and proxy runs on the Node runtime by default. Export a function named `proxy`; do not use it as the auth gate.
 2. **`nodejs_compat` is mandatory** in `wrangler.jsonc` — Better Auth needs Node crypto and Buffer.
 3. **OpenNext peer range excludes Next 16.4.0.** Use ≥ 16.4.1 (16.4.3 today); a patch-level downgrade breaks the build.
-4. **`neon-http` has no interactive transactions.** `db.transaction()` will not work; write the import row and its transactions with `db.batch()` so a partial import cannot happen.
+4. **D1 has no interactive transactions.** `db.transaction()` will not work on the `drizzle-orm/d1` driver; write the import row and its transactions with `db.batch()` (one atomic batch — a failure rolls the whole sequence back) so a partial import cannot happen.
 5. **pdf.js needs a worker.** Use `new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url))`; if Turbopack mis-bundles it during the spike, ship the main-thread fallback for the MVP and revisit.
 6. **Generate the Better Auth schema with its CLI** (`npx @better-auth/cli generate`) and diff it against `schema.ts` — hand-written auth tables drift on upgrade.
 7. **Tailwind v4 has no `tailwind.config.js`.** Tokens live in `@theme` inside `globals.css`; the shadcn CLI writes there too.
 8. **Statement cells wrap across lines** in Jago PDFs. Line-order parsing works for Jago because its layout is stable, but any generic PDF adapter needs pdf.js item coordinates, not raw text order.
 9. **Do not log row contents.** A single accidental `console.log(row)` puts a customer's finances in Workers Logs.
-10. **The invite email is a side effect after the batch, never inside it.** `neon-http` has no `db.transaction()` (gotcha 4), so any write the invite makes commits in one `db.batch()` first, then the Resend `fetch` runs. If the send fails, the invite is still valid: respond `fallback` so the UI offers the pocket code / join link for manual copying plus a retry. Never log the code or the recipient address (gotcha 9).
+10. **The invite email is a side effect after the batch, never inside it.** D1 has no `db.transaction()` (gotcha 4), so any write the invite makes commits in one `db.batch()` first, then the Resend `fetch` runs. If the send fails, the invite is still valid: respond `fallback` so the UI offers the pocket code / join link for manual copying plus a retry. Never log the code or the recipient address (gotcha 9).
 
-**Test strategy per layer.** Unit: money formats, date formats, both adapters against fixtures, reconciliation including a tampered amount, pocket code format (10 chars in 4+3+3 order) and collision regeneration. Integration: import → persist → report against a Neon branch, including a duplicate re-import. E2E: signup → workspace → invite → import → report, one path, run on preview. Manual: one real redacted statement per release.
+**Test strategy per layer.** Unit: money formats, date formats, both adapters against fixtures, reconciliation including a tampered amount, pocket code format (10 chars in 4+3+3 order) and collision regeneration. Integration: import → persist → report against a local D1 (Miniflare via wrangler), including a duplicate re-import. E2E: signup → workspace → invite → import → report, one path, run on preview. Manual: one real redacted statement per release.
 
 ---
 
@@ -263,9 +265,10 @@ Neon branches give preview and test environments a real Postgres without copying
 | Reconciliation | Proving imported rows against the balance the bank printed |
 | Minor unit | One hundredth of a rupiah; the storage unit for money |
 | Dedupe hash | Content hash that makes re-importing a month a no-op |
-| neon-http | Neon's stateless HTTP driver; no interactive transactions |
+| D1 | Cloudflare's managed SQLite, accessed through the `env.DB` Workers binding; `db.batch()` is atomic; no interactive transactions |
 | OpenNext | Adapter that builds a Next.js app to run on Cloudflare Workers |
-| PITR | Point-in-time recovery, Neon's backup mechanism |
-| PITR window | How far back a restore can reach; bounds the deletion guarantee |
+| Time Travel | D1's always-on point-in-time recovery: restore to any minute within the last 30 days (Workers Paid) or 7 days (Free) |
+| Time Travel window | How far back a restore can reach; bounds the deletion guarantee |
 | ASSETS binding | Cloudflare binding serving the built static files |
+| D1 binding | The `env.DB` entry in `wrangler.jsonc` that exposes a D1 database to the Worker — configuration, not a secret |
 | Expand/contract | Migration pattern that keeps old and new code compatible during rollout |

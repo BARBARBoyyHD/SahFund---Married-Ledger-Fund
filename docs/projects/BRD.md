@@ -28,7 +28,7 @@ SahFund is a two-person workspace for engaged couples in Indonesia: it imports t
 
 ### In Scope
 
-- Account creation and sign-in (email + password), one owner per workspace
+- Account creation and sign-in (email + password), one owner per workspace, one workspace per user
 - Invite a second member by email (sent via Resend) or by sharing the pocket code; both see the same fund
 - Import a Bank Jago statement (PDF text layer, processed on the user's device)
 - Import a CSV/Excel statement from any other bank via column mapping
@@ -94,7 +94,9 @@ GET  /w/:workspaceId        -> dashboard
 
 v1 hard limit: two members per workspace. A third attempt returns a clear message, not a silent failure.
 
-A partner joins either by entering the pocket code directly or by opening the link in the invite email (FR-13). Both paths are the same credential and hit the same two-member cap.
+**One workspace per user.** A user belongs to exactly one workspace — one membership in total. They can neither create a second workspace while already owning one nor join a second workspace while already a member anywhere. Both this rule and the two-member cap are enforced by the database (ITA §5, ERD §5), not merely by handler checks: the constraints absorb concurrent attempts, and the handler translates a violated constraint into the clear message. A user who already belongs to a workspace and attempts either action gets a clear refusal, never a silent failure and never a second membership row.
+
+A partner joins either by entering the pocket code directly or by opening the link in the invite email (FR-13). Both paths are the same credential and hit the same two-member cap and the same one-workspace-per-user rule.
 
 ### FR-03: Statement Import
 
@@ -222,7 +224,7 @@ POST /w/:id/invite     { email } -> { status: 'sent' | 'fallback' }
 | NFR-02 | Security: sessions validated server-side on every protected route; auth rate limited | 10 attempts/minute/IP; import 20/hour/workspace; invite email 10/hour/workspace |
 | NFR-03 | Correctness: money as integer minor units; no floating point in storage or arithmetic | 0 rounding defects in the reconciliation suite |
 | NFR-04 | Performance: import of a one-month statement; dashboard render on 4G | ≤ 5 s p95; ≤ 1.5 s p95 |
-| NFR-05 | Portability: standard Postgres and a standard Node runtime | Migration off the host ≤ 2 engineering days |
+| NFR-05 | Portability: data is standard SQLite (plain SQL, exported with `wrangler d1 export`); access goes through Drizzle with the dialect confined to one schema file and one client module — the Cloudflare-specific part is the `env.DB` binding, not the data | Migration off the host ≤ 2 engineering days (swap = dialect import + client import + regenerate migrations) |
 | NFR-06 | Compliance: Indonesian PDP law; data deletion honoured | Delete on request; purge ≤ 30 days |
 | NFR-07 | Availability: graceful degradation when the database is unreachable | 99.5% monthly; explicit error, no blank screen |
 | NFR-08 | Accessibility: forms, contrast, keyboard navigation | WCAG 2.2 AA for all interactive screens |
@@ -247,10 +249,10 @@ POST /w/:id/invite     { email } -> { status: 'sent' | 'fallback' }
         │  auth · workspaces · imports │
         │  categories · budget · share │
         └──────────────┬───────────────┘
-                       │ SQL
+                       │ binding (env.DB)
                        ▼
         ┌──────────────────────────────┐
-        │ Postgres (Neon)              │
+        │ Cloudflare D1 (SQLite)       │
         └──────────────────────────────┘
 ```
 
@@ -298,7 +300,7 @@ Indicative duration: one week of focused work, only if §3's out-of-scope list i
 | Money representation | Integer minor units | Floating point cannot be trusted with balances, and reconciliation depends on exactness |
 | Import cadence | Monthly, stated openly | Neither bank offers an API; the honest product is month-end reconciliation and forecast, not a live balance |
 | Authentication | Email + password with server sessions | No dependency on a third-party identity provider for the MVP |
-| Workspace membership | Invite code, two members | Matches the real unit of the product: one couple, one fund |
+| Workspace membership | Invite code, two members, one workspace per user | Matches the real unit of the product: one couple, one fund — a user has at most one couple to belong to |
 | Invitation delivery | Resend email + shareable pocket code | v1.0 sends invitations only, so a plain HTTP API with a free tier beats an SMTP setup; the pocket code stays a working fallback when the email fails, and no document ever rides along |
 
 Market evidence behind these decisions: `brainstorms/2026-11-wedding-planner-market-validation.md`.

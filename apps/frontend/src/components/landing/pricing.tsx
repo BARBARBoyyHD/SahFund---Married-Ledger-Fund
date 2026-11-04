@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { formatRupiah, rupiahToMinor } from "@/core/money";
-import { Container, Section, BUTTON_SECONDARY } from "@/components/landing/ui";
+import { Container, Eyebrow, Section, BUTTON_SECONDARY } from "@/components/landing/ui";
 
 const INCLUDED = [
   "Impor tanpa batas untuk satu pernikahan",
@@ -16,7 +16,8 @@ export function Pricing() {
       <Container>
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-12">
           <div data-reveal className="lg:col-span-4">
-            <h2 className="text-h2 font-bold text-ink">Satu kali bayar</h2>
+            <Eyebrow>Harga</Eyebrow>
+            <h2 className="mt-4 text-h2 font-bold text-ink">Satu kali bayar</h2>
             <p className="mt-4 max-w-[34ch] text-body text-ink-muted">
               Sekali per pernikahan, bukan langganan. Pekerjaannya memang selesai
               di hari H.

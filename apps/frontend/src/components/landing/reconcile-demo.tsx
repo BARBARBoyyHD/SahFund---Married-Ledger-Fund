@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useId, useState } from "react";
 
 import { formatRupiah, MINOR_PER_RUPIAH } from "@/core/money";
@@ -37,7 +38,7 @@ export function ReconcileDemo({
   return (
     <div
       data-ui
-      className="rounded-md border border-gold bg-surface px-4 py-5 text-ink lg:px-7 lg:py-6"
+      className="rounded-md border border-gold bg-surface px-4 py-5 text-ink shadow-card lg:px-7 lg:py-6"
     >
       <div className="flex items-baseline justify-between gap-4">
         <p className="font-bold">
@@ -52,8 +53,12 @@ export function ReconcileDemo({
           Contoh mutasi rekening {pocket} {period}
         </caption>
         <tbody>
-          {rows.map((row) => (
-            <tr key={`${row.on}-${row.label}`} className="align-top">
+          {rows.map((row, index) => (
+            <tr
+              key={`${row.on}-${row.label}`}
+              className="demo-row align-top"
+              style={{ "--row": index } as CSSProperties}
+            >
               <th
                 scope="row"
                 className="w-16 py-2 pr-2 text-left font-normal text-ink-muted"

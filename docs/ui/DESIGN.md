@@ -201,6 +201,13 @@ The failure mode to design against is explicit: **blue fintech plus pink wedding
 
 ## Colors
 
+> **2026-11-04 — landing pilot.** The landing page (`/`, plus login/404 through its
+> shared primitives) is piloting a warmer palette: **Emerald `#0D3B2E`,
+> Champagne Gold `#DFBA73`, Crisp Pearl `#F7F9F6`**. Dana Ayu = Emerald,
+> Dana Budi = Champagne Gold. This supersedes the cobalt/rose token table below
+> **for the landing page only**; the dashboard still ships the palette documented
+> here. Full migration pends user review — do not migrate app-wide tokens yet.
+
 | Token | Hex | Role |
 |---|---|---|
 | `primary` | `#1D4ED8` | Cobalt. Primary actions, active nav, progress, financial states, member B |

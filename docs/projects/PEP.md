@@ -9,7 +9,7 @@
 
 ## 1. Project Overview
 
-Deliver the v1.0 MVP defined by BRD §3 — two-member workspace, Jago and CSV import, reconciliation, categorisation, attribution, commitments, forecast, one-time entitlement — in seven working days, solo with agent assistance. The single biggest risk is not the code: it is that the parser has been proven against a fixture derived from a published example, not against a real exported statement, so the first real document may reveal a layout nobody has seen yet.
+Deliver the v1.0 MVP defined by BRD §3 — two-member workspace with invite by email (Resend) or pocket code, Jago and CSV import, reconciliation, categorisation, attribution, commitments, forecast, one-time entitlement — in seven working days, solo with agent assistance. The single biggest risk is not the code: it is that the parser has been proven against a fixture derived from a published example, not against a real exported statement, so the first real document may reveal a layout nobody has seen yet.
 
 | | |
 |---|---|
@@ -17,7 +17,7 @@ Deliver the v1.0 MVP defined by BRD §3 — two-member workspace, Jago and CSV i
 | **Delivery mode** | solo + agent-assisted |
 | **Overall confidence** | medium — architecture settled, one unvalidated input (the real statement) |
 
-Estimates in §4 total roughly 8.5 days against a 7-day target. That gap is deliberate and visible: §10 fixes the cut order now, so slippage is a decision made in advance rather than a panic on day seven.
+Estimates in §4 total roughly 8.6 days against a 7-day target. That gap is deliberate and visible: §10 fixes the cut order now, so slippage is a decision made in advance rather than a panic on day seven.
 
 ---
 
@@ -53,7 +53,7 @@ M1–M4 map one-to-one to BRD §7. M5 is the release gate, not a fifth product p
 - [ ] Neon project (ap-southeast-1) + dev/preview branches — Uwi — ~0.25d
 - [ ] Drizzle schema + first migration applied — Uwi — ~0.25d
 - [ ] Better Auth wiring, login/signup pages, `requireSession()` guard — Uwi — ~0.5d
-- [ ] Workspace create + invite code + join flow (max two members) — Uwi — ~0.25d
+- [ ] Workspace create + pocket code (10-char) + invite email via Resend + join flow (max two members) — Uwi — ~0.35d
 - [ ] OpenNext deploy to Workers + `/api/health` — Uwi — ~0.25d
 - [ ] CI: typecheck, unit tests, schema drift check — agent — ~0.25d
 
@@ -110,7 +110,7 @@ Days 5–7 carry QA continuously rather than as a separate phase; there is no we
 | R3 | OpenNext / Next 16 peer drift or build break | L | H | Pin exact versions; deploy the empty skeleton on day 1 before feature work | Preview build fails |
 | R4 | Better Auth schema drift | M | M | Generate with the CLI, diff against `schema.ts`, migrate | Auth queries fail after an upgrade |
 | R5 | No payment entity for Midtrans/Xendit | H | M | Ship Lynk.id license codes or manual grants; entitlement is not a dogfood blocker | Day 5 with no provider |
-| R6 | Scope creep ("while we're here": invitations, guest list) | H | H | BRD §3 out-of-scope list is contractual; every request becomes a v1.1 ticket | Any feature not in BRD §4 |
+| R6 | Scope creep ("while we're here": wedding invitations, guest list) | H | H | BRD §3 out-of-scope list is contractual; every request becomes a v1.1 ticket. Note: *partner* invitation email (BRD FR-13) is in scope — this risk means wedding invitations/RSVP, not member invites | Any feature not in BRD §4 |
 | R7 | Statement data leaking into logs or a third-party service | L | H | No document storage; no amounts/descriptions in logs; review every log call | Any PII in Workers Logs |
 | R8 | Price rejection at Rp 49.000 | M | M | Ten-customer test before any ad spend; adjust to Rp 79.000 only with evidence | Fewer than 5 paid in the first cohort |
 
@@ -177,6 +177,7 @@ Scope changes need a BRD amendment and an updated risk/timeline row here; a tech
 | Dependency | Cloudflare account with Workers enabled | Deploy target changes; ITA ADR-01 revisited |
 | Dependency | Neon project in `ap-southeast-1` | Latency rises; PITR window unchanged |
 | Dependency | Payment provider decision by day 5 | Manual invoicing for the first cohort |
+| Dependency | Resend account + verified sender domain (`RESEND_API_KEY`) | Invite email falls back to the copy-code/link path of FR-13 (join by pocket code still works); no user is blocked |
 | Constraint | Seven working days, one developer | §10 cut order applies |
 | Constraint | No document or image storage | Removes OCR and any "just upload a photo" request from scope |
 | Constraint | Bahasa Indonesia UI, IDR only | No localisation work beyond `id-ID` formatting |

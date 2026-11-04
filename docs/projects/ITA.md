@@ -96,6 +96,7 @@ Versions verified against the npm registry on 2026-Nov-02. Pin exact versions in
 | `src/core/reconcile.ts` | Balance-chain, totals, duplicate checks | core types |
 | `src/core/money.ts` | Rupiah parsing and formatting (ID and EN grouping) | — |
 | `src/lib/reports/*` | Budget vs actual, contributions, forecast aggregations | `lib/db` |
+| `src/lib/mail.ts` | Sends the invite email by calling the Resend HTTP API with `fetch` (no SDK) | `RESEND_API_KEY` |
 
 ### 4.2 Key Interfaces
 
@@ -139,6 +140,8 @@ Indexes: `transactions(workspaceId, occurredOn)`, `transactions(categoryId)`, `s
 
 `dedupe_hash = sha256(workspaceId | date | time | amountMinor | balanceMinor | ref)`. Re-importing an overlapping month is a no-op rather than a doubled balance.
 
+**Pocket code** (`workspaces.inviteCode`). Exactly 10 characters in fixed order — 4 digits, then 3 letters, then 3 alphanumeric — e.g. `4821kPz7xQ`. Generated server-side from a cryptographically secure random source; a collision against the existing `UNIQUE` constraint is resolved by regenerating, never by relaxing the constraint. It is the join credential for the workspace, so it is never written to logs or analytics (§11.9) and is rotated rather than edited in place.
+
 **Migrations.** `drizzle-kit generate` produces committed SQL; `drizzle-kit migrate` applies it to Neon. Expand/contract only: add nullable columns and backfill before making anything required, so a Worker rollback never meets an incompatible schema.
 
 **Retention.** Transactions and imports live until the workspace is deleted. Deletion cascades from `workspaces`; Neon PITR expires within the BRD's 30-day purge window. No documents exist to retain.
@@ -153,20 +156,21 @@ Indexes: `transactions(workspaceId, occurredOn)`, `transactions(categoryId)`, `s
 | Cloudflare Workers | Compute, static assets, edge rate limiting | Account API token in CI | Deploy fails loudly; `wrangler rollback` to the previous version |
 | Better Auth | Sessions, password hashing | Internal, no third party | Unauthenticated → redirect; error → generic message, details to logs |
 | Payment provider (Lynk.id now, Midtrans later) | One-time entitlement | Signed webhook or license code | Idempotent grant keyed by order id; retry on 5xx |
-| Email (later) | Verification, receipts | API key | Verification stays disabled until configured — never lock users out |
+| Resend | **Invite emails only** (v1.0) — no welcome, share-report, or notification mail | `RESEND_API_KEY` secret + verified from-domain | Sent after any invite write commits; on failure the pocket code stays valid and the UI shows copy code/link + retry |
+| Email verification, receipts (later) | Verification, receipts | API key | Verification stays disabled until configured — never lock users out |
 
-No bank API exists for account information, so there is deliberately no integration to build there.
+No bank API exists for account information, so there is deliberately no integration to build there. No SDK is added for email: the invite send is a single `fetch` to Resend's REST API from the route handler.
 
 ---
 
 ## 7. Security & Secrets
 
-- Production secrets via `wrangler secret put` (`DATABASE_URL`, `BETTER_AUTH_SECRET`); local development via `.dev.vars`; both gitignored. CI holds a Cloudflare API token scoped to this Worker only.
+- Production secrets via `wrangler secret put` (`DATABASE_URL`, `BETTER_AUTH_SECRET`, `RESEND_API_KEY`); local development via `.dev.vars`; both gitignored. CI holds a Cloudflare API token scoped to this Worker only. The Resend from-domain is verified in the Resend console and configured as a constant, not a secret.
 - Sessions are `httpOnly`, `Secure` in production, `SameSite=Lax`; the cookie carries the token, never the user record.
 - **Authorization is server-side.** Every protected page calls `requireSession()`; every route handler resolves the session before touching the database. `proxy.ts` only redirects — treating middleware as the gate is precisely the class of bug behind CVE-2025-29927.
 - Every query is scoped by workspace membership. A transaction id on its own is never sufficient; the handler verifies the caller belongs to the workspace that owns the row.
-- Rate limits: auth 10 attempts/minute/IP, import 20/hour/workspace, enforced at the Cloudflare edge where possible.
-- No statement document, image, or avatar is stored. Per-transaction `raw` lines exist for support only; logs carry workspace id, never amounts or descriptions.
+- Rate limits: auth 10 attempts/minute/IP, import 20/hour/workspace, invite email 10/hour/workspace, enforced at the Cloudflare edge where possible. Email sending is an abuse vector (spam relay via a paid API), so the invite cap is per workspace and sits alongside the existing limits.
+- No statement document, image, or avatar is stored. Per-transaction `raw` lines exist for support only; logs carry workspace id, never amounts or descriptions. The pocket code and invite recipient addresses are credentials too — never logged, never echoed into an error message (§11.9).
 - PDP: workspace deletion cascades immediately; backups expire inside 30 days; users can export their rows before deleting.
 
 ---
@@ -211,12 +215,13 @@ Neon branches give preview and test environments a real Postgres without copying
 | ADR-09 | Billing | One-time entitlement per workspace | Monthly subscription | BRD §8: the market has converged on one-time; the job ends at the wedding |
 | ADR-10 | Styling | Tailwind v4 + shadcn | CSS modules, MUI | CSS-first config, components owned in-repo |
 | ADR-11 | Auth protection | Server-side guard on every route | Proxy-only | Proxy checks are bypassable; the guard is authoritative |
+| ADR-12 | Invite email | Resend, plain REST call from the route handler | SES, Postmark, SMTP relay, an email SDK | v1.0 sends one low-volume transactional stream (invitations), so a `fetch` to a REST API needs no new dependency and fits the existing `wrangler secret` pattern; failure is decoupled from the invite write, so Resend being down cannot lose an invite |
 
 ---
 
 ## 11. Implementation Guidance
 
-**Build order.** Core logic (money → adapters → reconciliation) → schema and migrations → auth → workspace and invite → import endpoint → import UI → ledger and categories → reports and forecast → entitlement. Core logic first because it is the only part with real failure modes; UI is comparatively mechanical.
+**Build order.** Core logic (money → adapters → reconciliation) → schema and migrations → auth → workspace and invite (pocket code + Resend email) → import endpoint → import UI → ledger and categories → reports and forecast → entitlement. Core logic first because it is the only part with real failure modes; UI is comparatively mechanical.
 
 **Gotchas discovered or verified while prototyping:**
 
@@ -229,8 +234,9 @@ Neon branches give preview and test environments a real Postgres without copying
 7. **Tailwind v4 has no `tailwind.config.js`.** Tokens live in `@theme` inside `globals.css`; the shadcn CLI writes there too.
 8. **Statement cells wrap across lines** in Jago PDFs. Line-order parsing works for Jago because its layout is stable, but any generic PDF adapter needs pdf.js item coordinates, not raw text order.
 9. **Do not log row contents.** A single accidental `console.log(row)` puts a customer's finances in Workers Logs.
+10. **The invite email is a side effect after the batch, never inside it.** `neon-http` has no `db.transaction()` (gotcha 4), so any write the invite makes commits in one `db.batch()` first, then the Resend `fetch` runs. If the send fails, the invite is still valid: respond `fallback` so the UI offers the pocket code / join link for manual copying plus a retry. Never log the code or the recipient address (gotcha 9).
 
-**Test strategy per layer.** Unit: money formats, date formats, both adapters against fixtures, reconciliation including a tampered amount. Integration: import → persist → report against a Neon branch, including a duplicate re-import. E2E: signup → workspace → invite → import → report, one path, run on preview. Manual: one real redacted statement per release.
+**Test strategy per layer.** Unit: money formats, date formats, both adapters against fixtures, reconciliation including a tampered amount, pocket code format (10 chars in 4+3+3 order) and collision regeneration. Integration: import → persist → report against a Neon branch, including a duplicate re-import. E2E: signup → workspace → invite → import → report, one path, run on preview. Manual: one real redacted statement per release.
 
 ---
 

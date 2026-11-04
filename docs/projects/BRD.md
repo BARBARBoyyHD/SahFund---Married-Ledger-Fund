@@ -29,7 +29,7 @@ SahFund is a two-person workspace for engaged couples in Indonesia: it imports t
 ### In Scope
 
 - Account creation and sign-in (email + password), one owner per workspace
-- Invite a second member by code or link; both see the same fund
+- Invite a second member by email (sent via Resend) or by sharing the pocket code; both see the same fund
 - Import a Bank Jago statement (PDF text layer, processed on the user's device)
 - Import a CSV/Excel statement from any other bank via column mapping
 - Reconciliation gate: opening + money in − money out must equal the printed closing balance
@@ -90,9 +90,11 @@ GET  /w/:workspaceId        -> dashboard
 | name | yes | — | e.g. "Nikah Ayu & Budi" |
 | weddingDate | no | null | Drives the forecast; dashboard prompts until set |
 | budgetTarget | no | null | Total fund target, IDR |
-| inviteCode | auto | 8 chars | Shareable; rotatable by the owner |
+| inviteCode | auto | 10 chars | The **pocket code** — the join credential for the workspace. Format: 4 digits + 3 letters + 3 alphanumeric, e.g. `4821kPz7xQ`. Unique per workspace; shareable; rotatable by the owner |
 
 v1 hard limit: two members per workspace. A third attempt returns a clear message, not a silent failure.
+
+A partner joins either by entering the pocket code directly or by opening the link in the invite email (FR-13). Both paths are the same credential and hit the same two-member cap.
 
 ### FR-03: Statement Import
 
@@ -192,6 +194,24 @@ Read-only, expiring, revocable. Shows totals, category breakdown, and forecast. 
 - Price: Rp 49.000 introductory, Rp 99.000 list. Charge once per wedding.
 - Deletion: an owner can delete a workspace; rows are removed immediately and purged from backups within 30 days.
 
+### FR-13: Invitation Email (Resend)
+
+```
+POST /w/:id/invite     { email } -> { status: 'sent' | 'fallback' }
+```
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| email | yes | — | The invitee's address; text-only email, no attachments |
+| status | auto | — | `sent` when Resend accepted the message; `fallback` when it did not and the UI must offer the manual path |
+
+- Invitations are sent through **Resend** (getresend.com). v1.0 email scope is **invitations only** — no welcome email, no share-report email, no notifications.
+- The email contains the pocket code (FR-02) and a join link, in Bahasa Indonesia. It contains no financial data and never carries a document or image (NFR-01).
+- The invite itself is the workspace's existing pocket code — there is no separate invite record. Any database write that accompanies the send (e.g. rotating the code first) is committed in a single `db.batch()` **before** the email is attempted; the email is a side effect after the write, never inside it.
+- **Email failure does not invalidate the invite.** When the send fails, the invite code and link remain valid, the response is `fallback`, and the UI shows the pocket code and join link for manual copying plus a retry button. Both fallback and retry are required — the owner is never left with a dead button and no way to share.
+- Invite sending is rate limited per workspace (NFR-02).
+- The pocket code and the recipient address are credentials: never written to logs (NFR-02).
+
 ---
 
 ## 5. Non-Functional Requirements
@@ -199,7 +219,7 @@ Read-only, expiring, revocable. Shows totals, category breakdown, and forecast. 
 | # | Requirement | Target |
 |---|-------------|--------|
 | NFR-01 | Privacy: no statement document, image, or avatar is ever stored | Zero file bytes persisted; only normalised rows |
-| NFR-02 | Security: sessions validated server-side on every protected route; auth rate limited | 10 attempts/minute/IP; import 20/hour/workspace |
+| NFR-02 | Security: sessions validated server-side on every protected route; auth rate limited | 10 attempts/minute/IP; import 20/hour/workspace; invite email 10/hour/workspace |
 | NFR-03 | Correctness: money as integer minor units; no floating point in storage or arithmetic | 0 rounding defects in the reconciliation suite |
 | NFR-04 | Performance: import of a one-month statement; dashboard render on 4G | ≤ 5 s p95; ≤ 1.5 s p95 |
 | NFR-05 | Portability: standard Postgres and a standard Node runtime | Migration off the host ≤ 2 engineering days |
@@ -251,7 +271,7 @@ Full stack, data model, and deployment detail belong in the ITA.
 ## 7. Implementation Phases (indicative)
 
 ### Phase 1 — Foundation ⬜
-- Accounts, workspace creation, invite code, protected routes, deployment pipeline
+- Accounts, workspace creation, pocket code + invite email (Resend), protected routes, deployment pipeline
 
 ### Phase 2 — Import (highest technical risk) ⬜
 - Jago adapter, generic CSV adapter, client-side extraction, reconciliation, deduplication
@@ -279,6 +299,7 @@ Indicative duration: one week of focused work, only if §3's out-of-scope list i
 | Import cadence | Monthly, stated openly | Neither bank offers an API; the honest product is month-end reconciliation and forecast, not a live balance |
 | Authentication | Email + password with server sessions | No dependency on a third-party identity provider for the MVP |
 | Workspace membership | Invite code, two members | Matches the real unit of the product: one couple, one fund |
+| Invitation delivery | Resend email + shareable pocket code | v1.0 sends invitations only, so a plain HTTP API with a free tier beats an SMTP setup; the pocket code stays a working fallback when the email fails, and no document ever rides along |
 
 Market evidence behind these decisions: `brainstorms/2026-11-wedding-planner-market-validation.md`.
 
@@ -348,6 +369,7 @@ Dekorasi                 Rp  8.000.000           0       ok
 | Term | Definition |
 |------|------------|
 | Kantong Bersama | Bank Jago shared pocket: one account balance with more than one member and per-member transaction rights |
+| Pocket code | SahFund's name for the workspace invite code: 10 characters, 4 digits + 3 letters + 3 alphanumeric (e.g. `4821kPz7xQ`); the credential used to join a workspace ("join the pocket") |
 | e-Statement | The monthly PDF statement a bank generates per pocket or account |
 | Mutasi | Transaction history on a bank statement |
 | DP | Down payment to a vendor, typically 30–50% of the contract |

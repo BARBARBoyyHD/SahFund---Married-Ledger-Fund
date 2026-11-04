@@ -24,8 +24,8 @@ This document is a **derived** entity-relationship diagram of the SahFund databa
 erDiagram
     user ||--o{ session : has
     user ||--o{ account : has
-    user ||--o{ workspaces : owns
-    user ||--o{ members : "joins as"
+    user ||--o| workspaces : owns
+    user ||--o| members : "joins as"
     workspaces ||--o{ members : has
     workspaces ||--o{ categories : has
     workspaces ||--o{ imports : receives
@@ -68,7 +68,7 @@ erDiagram
 
     workspaces {
         text id PK
-        text ownerId FK
+        text ownerId FK "UK - one workspace per owner"
         text name
         date weddingDate
         bigint budgetTargetMinor "minor units"
@@ -78,8 +78,8 @@ erDiagram
 
     members {
         text workspaceId PK
-        text userId PK
-        text role
+        text userId PK "UK - one workspace per user"
+        text role "CHECK owner|member, unique per workspace"
     }
 
     categories {
@@ -202,7 +202,7 @@ No FK to `user`: rows are keyed by `identifier` (email), not by user id (`ITA §
 | Column | Type | Null | Key | Uniqueness | Source |
 |---|---|---|---|---|---|
 | id | text | NOT NULL | PK | — | `ITA §5` |
-| ownerId | text | NOT NULL | FK → `user` | — | `ITA §5`; `BRD §3` ("one owner per workspace") |
+| ownerId | text | NOT NULL | FK → `user` | UNIQUE | `ITA §5`; `BRD §3` ("one owner per workspace"); `BRD FR-02` (one workspace per user — the owner is also a `members` row, so `members.userId` UNIQUE is the primary guard; this UNIQUE is the backstop) |
 | name | text | NOT NULL | — | — | `ITA §5`; `BRD FR-02` (required) |
 | weddingDate | date | NULL | — | — | `BRD FR-02` (`Required: no`; drives the forecast) |
 | budgetTargetMinor | bigint | NULL | — | — | `BRD FR-02` (`Required: no`); money `BIGINT` (`ITA §5`, ADR-07) |
@@ -215,12 +215,13 @@ One couple per workspace (`ITA §5`).
 
 | Column | Type | Null | Key | Uniqueness | Source |
 |---|---|---|---|---|---|
-| workspaceId | text | NOT NULL | PK, FK → `workspaces` | UNIQUE (workspaceId, userId) | `ITA §5` |
-| userId | text | NOT NULL | PK, FK → `user` | UNIQUE (workspaceId, userId) | `ITA §5` |
-| role | text | NOT NULL | — | — | `ITA §5`; values are `owner` / `member` only (`BRD §3`) |
+| workspaceId | text | NOT NULL | PK, FK → `workspaces` | UNIQUE (workspaceId, userId); UNIQUE (workspaceId, role) | `ITA §5`; `AGENTS.md` §3 |
+| userId | text | NOT NULL | PK, FK → `user` | UNIQUE (workspaceId, userId); **UNIQUE (userId)** — one workspace per user | `ITA §5`; `BRD FR-02`; `AGENTS.md` §3 |
+| role | text | NOT NULL | — | UNIQUE (workspaceId, role); CHECK (role IN ('owner','member')) | `ITA §5`; `BRD §3` (roles owner/member only); `BRD FR-02` (two-member cap); `AGENTS.md` §3 |
 
 - The **composite primary key shown here is inferred**: `ITA §5` states `Unique (workspaceId, userId)` but does not say whether the table has a surrogate `id`. Open question §7.4.
-- **Two-member cap is NOT a DB constraint** — see §5.
+- **One workspace per user** is enforced by `UNIQUE (userId)` — the owner is inserted as a `members` row with `role = 'owner'` **in the same `db.batch()` as the workspace insert** (`AGENTS.md` §2, §3), so a second create or join aborts atomically on the index with no prior read. This single constraint blocks both owning and joining a second workspace. `UNIQUE (workspaces.ownerId)` is a backstop, not the primary guard (`AGENTS.md` §3).
+- **Two-member cap IS a DB constraint** — see §5.
 
 #### `categories`
 
@@ -303,9 +304,9 @@ Cardinality is written as "per parent → children". ON DELETE entries not state
 | 1 | `user` → `session` | one `user` → zero-or-more `session` | CASCADE — **inferred** (Better Auth owns its rows; `ITA §5` does not state it) | `ITA §5` |
 | 2 | `user` → `account` | one `user` → zero-or-more `account` | CASCADE — **inferred** (as above) | `ITA §5` |
 | 3 | `user` → `verification` | **no FK edge** — keyed by `identifier` (email string) | n/a | `ITA §5` |
-| 4 | `user` → `workspaces` (ownerId) | one `user` → zero-or-more `workspaces` | RESTRICT — **inferred** (workspace deletion is an explicit owner action, `BRD FR-12`; nothing says account removal cascades financial rows) | `ITA §5`; `BRD §3`, `BRD FR-12` |
-| 5 | `user` → `members` (userId) | one `user` → zero-or-more `members` | CASCADE — **inferred** (a user with no account cannot hold a membership) | `ITA §5` |
-| 6 | `workspaces` → `members` | one `workspaces` → zero-or-more `members` | **CASCADE** (stated: deletion cascades from `workspaces`) | `ITA §5` (Retention) |
+| 4 | `user` → `workspaces` (ownerId) | one `user` → zero-or-one `workspaces` (one workspace per user, `UNIQUE (ownerId)` backstop) | RESTRICT — **inferred** (workspace deletion is an explicit owner action, `BRD FR-12`; nothing says account removal cascades financial rows) | `ITA §5`; `BRD §3`, `BRD FR-02`, `BRD FR-12`; `AGENTS.md` §3 |
+| 5 | `user` → `members` (userId) | one `user` → zero-or-one `members` (one membership total, `UNIQUE (userId)`) | CASCADE — **inferred** (a user with no account cannot hold a membership) | `ITA §5`; `BRD FR-02`; `AGENTS.md` §3 |
+| 6 | `workspaces` → `members` | one `workspaces` → zero-or-two `members` (cap of 2 via `UNIQUE (workspaceId, role)` + role CHECK — see §5) | **CASCADE** (stated: deletion cascades from `workspaces`) | `ITA §5` (Retention); `BRD FR-02` |
 | 7 | `workspaces` → `categories` | one `workspaces` → zero-or-more `categories` | **CASCADE** (stated) | `ITA §5` (Retention) |
 | 8 | `workspaces` → `imports` | one `workspaces` → zero-or-more `imports` | **CASCADE** (stated) | `ITA §5` (Retention) |
 | 9 | `workspaces` → `transactions` | one `workspaces` → zero-or-more `transactions` | **CASCADE** (stated) | `ITA §5` (Retention) |
@@ -341,7 +342,11 @@ dedupe_hash = sha256(workspaceId | date | time | amountMinor | balanceMinor | re
 | `user.email` UNIQUE | `user` | `ITA §5` |
 | `session.token` UNIQUE | `session` | `ITA §5` |
 | `workspaces.inviteCode` UNIQUE | `workspaces` | `ITA §5`; `BRD FR-02` |
-| `members` UNIQUE (workspaceId, userId) | `members` | `ITA §5` |
+| `members` UNIQUE (workspaceId, userId) | `members` | `ITA §5`; `AGENTS.md` §3 |
+| `members` UNIQUE (userId) — one workspace per user | `members` | `ITA §5` (Membership constraints); `AGENTS.md` §3; `BRD FR-02` |
+| `members` UNIQUE (workspaceId, role) — two-member cap | `members` | `ITA §5` (Membership constraints); `AGENTS.md` §3; `BRD FR-02` |
+| `members` CHECK (role IN ('owner','member')) | `members` | `ITA §5` (Membership constraints); `AGENTS.md` §3; `BRD §3` |
+| `workspaces.ownerId` UNIQUE (backstop) | `workspaces` | `ITA §5` (Membership constraints); `AGENTS.md` §3; `BRD FR-02` |
 | `categories` UNIQUE (workspaceId, name) | `categories` | `ITA §5` |
 | `transactions` UNIQUE (workspaceId, dedupeHash) | `transactions` | `ITA §5` |
 
@@ -355,9 +360,18 @@ dedupe_hash = sha256(workspaceId | date | time | amountMinor | balanceMinor | re
 | `imports(workspaceId, createdAt)` | import history per workspace |
 | `commitments(workspaceId, dueOn)` | next-due list on the dashboard (`BRD FR-09`) |
 
-### Two-member cap — handler-enforced, NOT a DB constraint
+### Two-member cap & one workspace per user — DB-enforced
 
-**Flagged honestly:** the hard limit of two members per workspace (`BRD FR-02`) is enforced **in the join handler** — `ITA §5` says so verbatim ("max 2 enforced in the handler"). `UNIQUE (workspaceId, userId)` only prevents the *same* user joining twice; **no CHECK constraint, trigger, or partial index limits a workspace to two rows**. The schema does not enforce the cap, and nothing in this document should be read as if it does. A third join attempt must return a clear message, never a silent failure (`BRD FR-02`).
+Both membership rules are **database constraints**, not handler logic — all three sources agree on the mechanism (`ITA §5`, Membership constraints table; `AGENTS.md` §3, the constraint is the source of truth; `BRD FR-02`, the user-visible message):
+
+> **Note:** `AGENTS.md` §3, `ITA §5` (rows `members`/`workspaces` + the **Membership constraints** table) and `BRD FR-02` ("enforced by the database … not merely by handler checks") now all specify the same DB-enforced mechanism: `members` `UNIQUE (userId)`, `members` `UNIQUE (workspaceId, role)` + `CHECK (role IN ('owner','member'))`, backstopped by `workspaces` `UNIQUE (ownerId)`. The `ITA.md`/`BRD.md` updates are in the working tree, not yet committed.
+
+- **One workspace per user** — `members` UNIQUE (userId): a user has at most one membership row in the whole database, which blocks owning a second workspace and joining a second one with a single index. The owner *is* a `members` row (`role = 'owner'`), written **in the same `db.batch()` as the workspace insert** (`AGENTS.md` §2 — one atomic batch per request; §3 — no prior read), so a second create or join aborts atomically on the index with no check-then-act window; `workspaces.ownerId` UNIQUE is a backstop for a workspace row written without its membership row (`ITA §5`, Membership constraints; `AGENTS.md` §3).
+- **Max two members** — `members` CHECK (role IN ('owner','member')) plus `members` UNIQUE (workspaceId, role): at most one owner row and one member row per workspace. A join always inserts `role = 'member'`, so a third join fails on the unique index even when two joins race. `UNIQUE (userId)` limits a *user* to one workspace and does **not** substitute for this cap.
+
+**Why this works without transactions:** `neon-http` has no interactive transactions (ADR-02), so a "count, then insert" handler check is a read-then-write race and cannot be the correctness mechanism. A single `INSERT` decided by the unique index needs no transaction: two concurrent inserts for the last slot both fire, exactly one succeeds, the loser gets SQLSTATE `23505`. The handler's job is only to map the violated constraint name to a clear message — `userId` → "you already belong to a workspace", `workspaceId + role` → the pocket is full (`BRD FR-02`) — never to enforce the cap by counting.
+
+**Honest limits:** the constraint guarantees *at most two rows*, not which of two concurrent joiners wins; and if v1.1 introduces more roles (PEP §11), `UNIQUE (workspaceId, role)` must be redesigned together with the role set.
 
 ### Pocket code (`workspaces.inviteCode`)
 
@@ -386,7 +400,8 @@ dedupe_hash = sha256(workspaceId | date | time | amountMinor | balanceMinor | re
 1. **Share-report token has no table (`BRD FR-11` vs `ITA §5`).** FR-11 specces `POST /w/:id/share → { token, url, expiresAt }` and an unauthenticated `GET /r/:token` that is read-only, expiring, and revocable — yet `ITA §5` lists **no entity** that stores a token. It is deliberately omitted from the diagram. Options: (a) a new `share_tokens`-style table (workspaceId, token, expiresAt, revokedAt) — keeps revocation and expiry queryable; (b) columns on `workspaces` — fewer tables, but conflates one credential with the workspace row. **Needs an ITA §5 addendum before schema authoring.**
 2. **Entitlement: table vs `workspaces.plan` column.** ADR-09 / `ITA §6` require an idempotent grant **keyed by order id** (retry on 5xx is safe because the grant is keyed by order id), which implies some record of orders/grants — but `ITA §5` contains only the `workspaces.plan` column. Where does the order id live? Options: (a) a small `orders`/grants table (audit + idempotency key); (b) `workspaces.plan` only, with idempotency handled at the webhook layer — simpler, but no persisted receipt. This also decides the shape of the planned `plans` entity in §3.
 3. **Should the *inferred* ON DELETE rules be pinned?** Rows #1, #2, #4, #5, #11, #12, #13, #14 in §4 are this document's inferences; only the workspace cascade (#6–#10) is stated in `ITA §5`. Recommend: write them explicitly into the first migration (expand/contract, `ITA §5` Migrations) so they are deliberate decisions rather than driver defaults — but they must be confirmed, not assumed, before the migration is generated.
-4. **What does `transactions.memberId` actually reference?** `ITA §5` lists `members` key fields as `workspaceId, userId, role` with `UNIQUE (workspaceId, userId)` — **no surrogate id**. Is `memberId` a `userId` (FK → `user`, globally unique) or a membership key (which would need a surrogate `id` or a composite FK carrying `workspaceId` too)? This also settles whether the composite PK shown for `members` in §2/§3 is right. Choosing wrong breaks the FR-07 per-member report (`BRD FR-07`).
+4. **What does `transactions.memberId` actually reference?** `ITA §5` lists `members` key fields as `workspaceId, userId, role` with `UNIQUE (workspaceId, userId)` — **no surrogate id**. Is `memberId` a `userId` (FK → `user`, globally unique) or a membership key (which would need a surrogate `id` or a composite FK carrying `workspaceId` too)? This also settles whether the composite PK shown for `members` in §2/§3 is right. Choosing wrong breaks the FR-07 per-member report (`BRD FR-07`). *Note: with `UNIQUE (userId)` (one membership per user) a user id and a membership key are 1:1, which makes the `userId` reading simpler — but the choice still needs pinning before schema authoring.*
+5. **Does the shipped driver expose SQLSTATE for the 23505 error mapping?** `AGENTS.md` §3 (and `ITA §5`, Membership constraints) say the handler maps SQLSTATE `23505` (unique violation) — and ideally the *violated constraint name* — to the clear 409-style message (`BRD FR-02`). The project driver is `neon-http` (ADR-02), whose errors travel over HTTP rather than the wire protocol used by `node-postgres`. Verify before implementing the handler that the driver in use actually surfaces the SQLSTATE code (and constraint name), otherwise the mapping needs a documented, tested fallback — message-text matching is fragile and must not become the enforcement mechanism (§5).
 
 ---
 
@@ -401,19 +416,19 @@ Traceability from every item in this document back to a doc row.
 | `account` | `ITA §5` (row `account`); ADR-04 |
 | `verification` | `ITA §5` (row `verification`); activation gating — `ITA §6` |
 | `workspaces` | `ITA §5` (row `workspaces`); `BRD FR-02`; one owner — `BRD §3` |
-| `members` | `ITA §5` (row `members`); `BRD FR-02` (join paths, two-member cap) |
+| `members` | `ITA §5` (row `members` + Membership constraints table); `BRD FR-02` (join paths, two-member cap, one workspace per user); `AGENTS.md` §3 |
 | `categories` | `ITA §5` (row `categories`); `BRD FR-06` (seed set), `BRD FR-08` |
 | `imports` | `ITA §5` (row `imports`); `BRD FR-03` (payload, ≤ 5,000 rows); `BRD FR-04` |
 | `transactions` | `ITA §5` (row `transactions`); `BRD FR-05` (ledger fields); `BRD FR-07` (attribution via `memberId`) |
 | `commitments` | `ITA §5` (row `commitments`); `BRD FR-09` |
 | `plans` (planned entity) | `BRD FR-12`; `ITA` ADR-09 — **no `ITA §5` row** |
-| Ownership edge `user` → `workspaces` | `ITA §5` (`ownerId`); `BRD §3` |
+| Ownership edge `user` → `workspaces` | `ITA §5` (`ownerId`); `BRD §3`; `AGENTS.md` §3 (backstop `UNIQUE (ownerId)`) |
 | Workspace cascade (#6–#10) | `ITA §5` Retention; `BRD NFR-06` (delete on request, purge ≤ 30 days) |
 | `dedupeHash` formula + unique | `ITA §5` |
 | Index list (all five) | `ITA §5` |
-| Unique constraints (all six) | `ITA §5` (+ `BRD FR-02` for inviteCode) |
+| Unique constraints + role CHECK (ten rows in §5) | `ITA §5` (email, token, inviteCode, members row identity, categories, dedupe — plus the Membership constraints table for `members.userId`, `members.workspaceId + role`, `workspaces.ownerId` backstop); `AGENTS.md` §3; `BRD FR-02`; `BRD §3` (role set) |
 | Pocket-code format / CSPRNG / regenerate / rotate / never-log | `ITA §5`; `BRD FR-02`, `BRD FR-13` |
-| Two-member cap = handler, not DB | `ITA §5` (members note); `BRD FR-02` |
+| Two-member cap + one workspace per user = DB constraints | `ITA §5` (Membership constraints table); `AGENTS.md` §3; `BRD FR-02` ("enforced by the database … not merely by handler checks") |
 | `reconciled` / `issues` semantics | `ITA §5`; `BRD FR-04` |
 | `workspaces.plan` | `ITA §5`; `BRD FR-12`; ADR-09; grant idempotency — `ITA §6` |
 | Money as `BIGINT` minor units | `ITA §5`; ADR-07; `BRD NFR-03` |

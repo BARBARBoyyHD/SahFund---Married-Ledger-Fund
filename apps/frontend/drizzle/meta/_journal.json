@@ -8,6 +8,13 @@
       "when": 1793765879705,
       "tag": "0000_majestic_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793777239634,
+      "tag": "0001_last_leopardon",
+      "breakpoints": true
     }
   ]
 }

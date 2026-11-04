@@ -129,8 +129,8 @@ Money is stored as `BIGINT` **minor units** (1/100 rupiah). Floating point is ba
 | `session` | Postgres | token (unique), userId, expiresAt | Cookie holds the token only |
 | `account` | Postgres | providerId, accountId, userId, password | Credential or OAuth link |
 | `verification` | Postgres | identifier, value, expiresAt | Reserved for email verification |
-| `workspaces` | Postgres | id, ownerId, name, weddingDate, budgetTargetMinor, inviteCode (unique), plan | One couple per workspace |
-| `members` | Postgres | workspaceId, userId, role | Unique (workspaceId, userId); max 2 enforced in the handler |
+| `workspaces` | Postgres | id, ownerId, name, weddingDate, budgetTargetMinor, inviteCode (unique), plan | One couple per workspace; `ownerId` UNIQUE — a user owns at most one workspace |
+| `members` | Postgres | workspaceId, userId, role | Unique (workspaceId, userId); Unique (userId) — one workspace per user; Unique (workspaceId, role) with role ∈ {owner, member} — max 2 per workspace; all DB-enforced (see constraints below) |
 | `categories` | Postgres | workspaceId, name, kind, budgetMinor, sort | Unique (workspaceId, name) |
 | `imports` | Postgres | workspaceId, sourceId, period, pocketName, txCount, reconciled, issues (jsonb) | One row per upload |
 | `transactions` | Postgres | workspaceId, memberId?, categoryId?, occurredOn, description, amountMinor, balanceMinor, direction, ref, source, importId?, dedupeHash | Unique (workspaceId, dedupeHash) |
@@ -139,6 +139,18 @@ Money is stored as `BIGINT` **minor units** (1/100 rupiah). Floating point is ba
 Indexes: `transactions(workspaceId, occurredOn)`, `transactions(categoryId)`, `session(userId)`, `imports(workspaceId, createdAt)`, `commitments(workspaceId, dueOn)`.
 
 `dedupe_hash = sha256(workspaceId | date | time | amountMinor | balanceMinor | ref)`. Re-importing an overlapping month is a no-op rather than a doubled balance.
+
+**Membership constraints** (this is the schema spec for the future `src/lib/db/schema.ts`; enforcement philosophy per `AGENTS.md` §3 — the constraint is the source of truth, the handler only produces the clear message):
+
+| Invariant | Mechanism |
+|-----------|-----------|
+| One workspace per user (`BRD FR-02`) | `members` **UNIQUE (userId)** — a user has at most one membership row, so they can neither join a second workspace nor own a second one. Backstop: `workspaces` **UNIQUE (ownerId)**, which keeps the create path safe even if a workspace row were ever written without its owner membership row. |
+| One owner per workspace | `members` role is restricted to `{owner, member}` (**CHECK constraint**), and `members` **UNIQUE (workspaceId, role)** guarantees at most one `owner` row per workspace. |
+| Max two members per workspace (`BRD FR-02`) | The same **UNIQUE (workspaceId, role)**: at most one `owner` row + at most one `member` row = at most two rows. A join always inserts `role = 'member'`, so when the member slot is taken the insert fails on the unique index. |
+
+Why this mechanism over a count or a partial index: `neon-http` has no interactive transactions (ADR-02), so a "count members, then insert" check is a read-then-write race that cannot be made safe in application code. A single `INSERT` decided by the unique index needs no transaction — two concurrent joins for the last slot both fire, exactly one succeeds, the loser receives unique-violation `23505`, and the handler maps that specific constraint name to the clear "workspace is full" message. A count-based CHECK cannot exist (CHECK cannot see other rows), and a partial index counting rows is not expressible; a slot-column variant would work but adds a column that `role` already represents.
+
+Honest limits, stated deliberately: the database guarantees *at most two rows*, not *which* of two concurrent joiners wins; and the user-facing clarity still depends on the handler translating each violated constraint (`userId` → "you already belong to a workspace", `workspaceId+role` → "the pocket is full") rather than surfacing a raw SQL error. If v1.1 introduces further roles (`PEP §11`), `UNIQUE (workspaceId, role)` must be redesigned together with the role set — it is correct exactly as long as role ∈ {owner, member}.
 
 **Pocket code** (`workspaces.inviteCode`). Exactly 10 characters in fixed order — 4 digits, then 3 letters, then 3 alphanumeric — e.g. `4821kPz7xQ`. Generated server-side from a cryptographically secure random source; a collision against the existing `UNIQUE` constraint is resolved by regenerating, never by relaxing the constraint. It is the join credential for the workspace, so it is never written to logs or analytics (§11.9) and is rotated rather than edited in place.
 
@@ -205,7 +217,7 @@ Neon branches give preview and test environments a real Postgres without copying
 | # | Decision | Choice | Alternatives considered | Rationale |
 |---|----------|--------|-------------------------|-----------|
 | ADR-01 | Hosting | Cloudflare Workers via OpenNext | Vercel, Fly.io, Node VPS | Cost and edge latency; static assets free; user's platform choice |
-| ADR-02 | Postgres driver | `neon-http` | `neon-serverless` WebSocket Pool, node-postgres | No connection pool to exhaust on Workers. Trade-off: no interactive transactions, so imports use `db.batch()` |
+| ADR-02 | Postgres driver (**superseded by ADR-13**) | `neon-http` | `neon-serverless` WebSocket Pool, node-postgres | No connection pool to exhaust on Workers. Trade-off: no interactive transactions, so imports use `db.batch()` |
 | ADR-03 | ORM | Drizzle | Prisma, raw SQL | Edge-compatible, SQL-first, no engine binary in the bundle |
 | ADR-04 | Auth | Better Auth | Auth.js, Clerk, hand-rolled | Sessions in our own Postgres, no per-user fee, no identity lock-in |
 | ADR-05 | Parsing location | Browser, deterministic | Server-side, LLM extraction | Document never leaves the device; exact arithmetic; zero per-document cost |
@@ -216,6 +228,7 @@ Neon branches give preview and test environments a real Postgres without copying
 | ADR-10 | Styling | Tailwind v4 + shadcn | CSS modules, MUI | CSS-first config, components owned in-repo |
 | ADR-11 | Auth protection | Server-side guard on every route | Proxy-only | Proxy checks are bypassable; the guard is authoritative |
 | ADR-12 | Invite email | Resend, plain REST call from the route handler | SES, Postmark, SMTP relay, an email SDK | v1.0 sends one low-volume transactional stream (invitations), so a `fetch` to a REST API needs no new dependency and fits the existing `wrangler secret` pattern; failure is decoupled from the invite write, so Resend being down cannot lose an invite |
+| ADR-13 | Database | Cloudflare D1 (SQLite) via `drizzle-orm/d1` | Neon Postgres (supersedes ADR-02), Turso, Hyperdrive+Postgres, local SQLite file | Same platform as the Worker (ADR-01); free tier dwarfs v1.0 load; zero users now, so the swap costs nothing. Portability preserved by convention, not by a layer: all access through Drizzle's query builder, dialect types only in `schema.ts`, one client module as the swap point — a future swap = dialect + one import + regenerated migrations (AGENTS §1 P1–P8). Rejected: repository/abstraction layer (AGENTS §5 forbids speculative layers); Turso (second vendor, no benefit at this scale) |
 
 ---
 

@@ -31,6 +31,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build and test artifacts (OpenNext/Workers output, Playwright reports).
+    ".open-next/**",
+    ".wrangler/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
   {
     files: ["src/**/*.{ts,tsx}"],

@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "test:integration": "node --test \"test/integration/*.test.ts\"",
+    "check:residue": "node scripts/check-residue.mjs",
+    "e2e:server": "wrangler d1 migrations apply sahfund --local && next dev --port 3100",
+    "e2e:server:workers": "wrangler d1 migrations apply sahfund --local && opennextjs-cloudflare build && wrangler dev --port 3100 --ip 127.0.0.1",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -27,6 +31,7 @@
     "drizzle-kit": "0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "miniflare": "5.20261101.0-beta",
     "tailwindcss": "^4",
     "typescript": "^5",
     "wrangler": "4.156.1"

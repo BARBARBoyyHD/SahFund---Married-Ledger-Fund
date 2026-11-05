@@ -6,7 +6,7 @@
 
 ## 2. Auth session completion (US-01–US-04) — backend-specialist + frontend-engineer
 
-- [ ] 2.1 Add typed driver-error classification to `src/lib/db/index.ts` only (P3): unique-violation → `{ kind, table, columns }` from the SQLite message, with unit/integration tests — no raw driver-string matching in any handler (design D5; prerequisite for 3.3–3.5; AC: US-05/US-06 message mapping).
+- [x] 2.1 Add typed driver-error classification to `src/lib/db/index.ts` only (P3): unique-violation → `{ kind, table, columns }` from the SQLite message, with unit/integration tests — no raw driver-string matching in any handler (design D5; prerequisite for 3.3–3.5; AC: US-05/US-06 message mapping).
 - [ ] 2.2 Add the workspace membership guard beside `src/lib/session.ts`: session → membership row scoped by `workspaceId` (AGENTS §4); pages redirect/not-found without data, route handlers answer 401 (no session) / 404 (non-member, no existence disclosure) and never return the row (design D11; AC: US-04 all four scenarios).
 - [ ] 2.3 Create `src/app/api/auth/sign-out/route.ts`: `auth.api.signOut` with cookie relay (same pattern as sign-in), generic error mapping, redirect target `/login` (design D1; AC: US-03 "session cookie is cleared").
 - [ ] 2.4 Change the redirect contract in `src/app/api/auth/route.ts` (+ `auth-form.tsx` pass-through): sign-up → `/workspaces/new` (US-01), sign-in → `/dashboard` or a server-validated same-origin relative `next` (starts with `/`, not `//`, no scheme; sign-in only) for the US-53 link flow, sign-out → `/login` (design D8; AC: US-01, US-02 redirects + an open-redirect rejection test; marks the proposal's **BREAKING** behavioural change).

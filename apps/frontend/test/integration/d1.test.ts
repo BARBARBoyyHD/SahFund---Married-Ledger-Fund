@@ -139,10 +139,9 @@ it("rejects a duplicate (workspaceId, dedupeHash) and rolls the batch back", asy
   assert.equal(stored[0].dedupeHash, "hash-a");
 });
 
-it("surfaces unique violations in the shape isUniqueViolation() must detect (P3 contract)", async () => {
-  // `isUniqueViolation()` lands with the first write handler (SPEC §6.1) — until then
-  // this pins the driver contract it will rely on: D1 reports
-  // `D1_ERROR: UNIQUE constraint failed: <table>.<column>: SQLITE_CONSTRAINT
+it("surfaces unique violations in the shape classifyError() detects (P3 contract)", async () => {
+  // `classifyError()` (src/lib/db/index.ts) parses exactly this driver contract: D1
+  // reports `D1_ERROR: UNIQUE constraint failed: <table>.<column>: SQLITE_CONSTRAINT
   // (extended: SQLITE_CONSTRAINT_UNIQUE)`, and the CHECK error never matches.
   await addUser(h.binding, "u-shape");
   await addUser(h.binding, "u-shape-2");

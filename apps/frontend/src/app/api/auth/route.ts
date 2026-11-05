@@ -2,7 +2,7 @@ import { APIError } from "better-auth/api";
 import { NextResponse } from "next/server";
 
 import { getAuth } from "@/lib/auth/auth";
-import { allowAuthAttempt, clientKey } from "@/lib/auth/rate-limit";
+import { AUTH_LIMIT, allowAttempt, clientKey } from "@/lib/auth/rate-limit";
 import {
   fieldErrors,
   signInSchema,
@@ -10,6 +10,7 @@ import {
   type SignInInput,
   type SignUpInput,
 } from "@/lib/auth/schema";
+import { getDb } from "@/lib/db";
 
 function invalid<T extends Record<string, unknown>>(error: Parameters<typeof fieldErrors<T>>[0]) {
   return NextResponse.json(
@@ -69,7 +70,7 @@ function authFailure(error: unknown) {
  * set by Better Auth itself — this handler only relays it.
  */
 export async function POST(request: Request) {
-  if (!allowAuthAttempt(clientKey(request))) {
+  if (!(await allowAttempt(getDb(), `ip:${clientKey(request)}`, AUTH_LIMIT))) {
     return NextResponse.json(
       { message: "Terlalu banyak percobaan. Tunggu satu menit lalu coba lagi." },
       { status: 429, headers: { "retry-after": "60" } },

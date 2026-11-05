@@ -35,7 +35,8 @@ import {
  *
  * Ids and timestamps are generated app-side (rule P6): no `now()`, no
  * `gen_random_uuid()`, no SQL-side hashing. The `sql` defaults below are the
- * constraint/default allowlist of rule P1.
+ * constraint/default allowlist of rule P1; the one other allowlisted fragment is
+ * `rateLimitIncrement` at the bottom of this file (design D4) — no other raw SQL.
  */
 
 // --- Better Auth tables: generated, do not edit by hand ---
@@ -290,6 +291,15 @@ export const rateLimits = sqliteTable(
     index("rate_limits_expires_idx").on(t.expiresAt),
   ],
 );
+
+/**
+ * Rule P1 allowlist entry #3: the counter bump, and the only raw-SQL expression
+ * outside the defaults above. Drizzle's `onConflictDoUpdate` `set` takes a column
+ * value or an expression — `count = count + 1` has no query-builder form. The
+ * guard (`count < limit`) and everything else stay in the builder
+ * (`src/lib/auth/rate-limit.ts`).
+ */
+export const rateLimitIncrement = sql`${rateLimits.count} + 1`;
 
 export type AuthUser = typeof user.$inferSelect;
 export type AuthSession = typeof session.$inferSelect;

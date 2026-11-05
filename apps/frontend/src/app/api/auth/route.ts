@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { getAuth } from "@/lib/auth/auth";
 import { AUTH_LIMIT, allowAttempt, clientKey } from "@/lib/auth/rate-limit";
 import {
-  fieldErrors,
   safeNext,
   signInSchema,
   signUpSchema,
@@ -12,16 +11,7 @@ import {
   type SignUpInput,
 } from "@/lib/auth/schema";
 import { getDb } from "@/lib/db";
-
-function invalid<T extends Record<string, unknown>>(error: Parameters<typeof fieldErrors<T>>[0]) {
-  return NextResponse.json(
-    {
-      message: "Periksa kembali kolom yang ditandai.",
-      fieldErrors: fieldErrors<T>(error),
-    },
-    { status: 422 },
-  );
-}
+import { invalid } from "@/lib/http";
 
 /** Better Auth speaks English error codes; the user reads Bahasa Indonesia (§8). */
 function authFailure(error: unknown) {
@@ -92,11 +82,11 @@ export async function POST(request: Request) {
 
   if (mode === "sign-up") {
     const parsed = signUpSchema.safeParse(body);
-    if (!parsed.success) return invalid<SignUpInput>(parsed.error);
+    if (!parsed.success) return invalid(parsed.error);
     attempt = { kind: "sign-up", input: parsed.data };
   } else if (mode === "sign-in") {
     const parsed = signInSchema.safeParse(body);
-    if (!parsed.success) return invalid<SignInInput>(parsed.error);
+    if (!parsed.success) return invalid(parsed.error);
     attempt = { kind: "sign-in", input: parsed.data };
   } else {
     return NextResponse.json({ message: "Mode tidak dikenal." }, { status: 400 });

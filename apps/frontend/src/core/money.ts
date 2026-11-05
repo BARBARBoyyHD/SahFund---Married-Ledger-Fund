@@ -17,3 +17,20 @@ export function formatRupiah(minor: number): string {
 export function rupiahToMinor(rupiah: number): number {
   return Math.round(rupiah) * MINOR_PER_RUPIAH;
 }
+
+/**
+ * A form's rupiah input (`"Rp 50.000.000"`, `"50.000.000"`, `"50000000"`) to whole
+ * rupiah, or `null` when there is nothing usable. Grouping separators are dropped;
+ * a fractional amount (`"50,5"`, `"1.234,56"`) is refused rather than rounded — money
+ * is integer rupiah and minor units, never a float.
+ */
+export function parseRupiahInput(input: string): number | null {
+  const trimmed = input.trim();
+  if (/[,.]\d{1,2}$/.test(trimmed)) return null;
+
+  const digits = trimmed.replace(/[^\d]/g, "");
+  if (!digits) return null;
+
+  const rupiah = Number(digits);
+  return Number.isSafeInteger(rupiah) ? rupiah : null;
+}

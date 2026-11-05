@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { getDb } from "@/lib/db";
 import { members } from "@/lib/db/schema";
+import { unauthenticated, unavailable } from "@/lib/http";
 import { getSession } from "@/lib/session";
 
 /** The caller's membership in one workspace, or why there is none (design D11). */
@@ -51,20 +52,22 @@ export type ApiMembership = { ok: true; userId: string; role: string } | { ok: f
  * the caller's role for the handler's own owner checks; it never returns a row.
  */
 export async function membershipForApi(workspaceId: string): Promise<ApiMembership> {
-  const access = await readMembership(workspaceId);
+  try {
+    const access = await readMembership(workspaceId);
 
-  if (access.kind === "member") return { ok: true, userId: access.userId, role: access.role };
+    if (access.kind === "member") return { ok: true, userId: access.userId, role: access.role };
+    if (access.kind === "unauthenticated") return { ok: false, response: unauthenticated() };
 
-  const unauthenticated = access.kind === "unauthenticated";
-  return {
-    ok: false,
-    response: NextResponse.json(
-      {
-        message: unauthenticated
-          ? "Sesi Anda sudah berakhir. Silakan masuk lagi."
-          : "Workspace tidak ditemukan.",
-      },
-      { status: unauthenticated ? 401 : 404 },
-    ),
-  };
+    return {
+      ok: false,
+      response: NextResponse.json({ message: "Workspace tidak ditemukan." }, { status: 404 }),
+    };
+  } catch (error) {
+    // A dead database is an explicit 503 with a retry message, never a blank response (§8).
+    console.error("[membership] read failed", {
+      status: 503,
+      cause: error instanceof Error ? error.name : typeof error,
+    });
+    return { ok: false, response: unavailable() };
+  }
 }

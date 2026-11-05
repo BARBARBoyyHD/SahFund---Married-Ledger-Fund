@@ -5,7 +5,7 @@ import { z } from "zod";
  * Messages are the copy the user reads, in Bahasa Indonesia.
  */
 
-const email = z
+export const emailField = z
   .string()
   .trim()
   .min(1, "Email wajib diisi.")
@@ -20,12 +20,12 @@ export const signUpSchema = z.object({
     .trim()
     .min(2, "Nama minimal 2 karakter.")
     .max(80, "Nama maksimal 80 karakter."),
-  email,
+  email: emailField,
   password,
 });
 
 export const signInSchema = z.object({
-  email,
+  email: emailField,
   // Sign-in does not restate the length policy: that would tell a stranger our rules.
   password: z.string().min(1, "Kata sandi wajib diisi."),
   /** Where to land afterwards (US-53 join link). Sanitised by `safeNext`, never trusted. */
@@ -46,16 +46,4 @@ export function safeNext(value: unknown): string | null {
   // Backslashes, tabs and newlines are rewritten by URL parsers before they resolve.
   if (/[\\\u0000-\u001f]/.test(value)) return null;
   return value;
-}
-
-export type FieldErrors<T> = Partial<Record<keyof T, string>>;
-
-/** First message per field, keyed by field name. */
-export function fieldErrors<T extends Record<string, unknown>>(error: z.ZodError): FieldErrors<T> {
-  const out: FieldErrors<T> = {};
-  for (const issue of error.issues) {
-    const key = issue.path[0] as keyof T | undefined;
-    if (key && !out[key]) out[key] = issue.message;
-  }
-  return out;
 }

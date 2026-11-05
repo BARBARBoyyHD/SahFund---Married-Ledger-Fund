@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { forecast, monthsUntil } from "./forecast.ts";
-import { formatRupiah, rupiahToMinor } from "./money.ts";
+import { formatRupiah, parseRupiahInput, rupiahToMinor } from "./money.ts";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
@@ -14,6 +14,22 @@ test("formatRupiah groups in id-ID and keeps the sign", () => {
 test("rupiahToMinor never produces a fraction", () => {
   assert.equal(rupiahToMinor(49000), 4900000);
   assert.equal(formatRupiah(rupiahToMinor(49000)), "Rp 49.000");
+});
+
+test("parseRupiahInput accepts how people type rupiah and refuses fractions", () => {
+  assert.equal(parseRupiahInput("50.000.000"), 50_000_000);
+  assert.equal(parseRupiahInput("Rp 50.000.000"), 50_000_000);
+  assert.equal(parseRupiahInput("50000000"), 50_000_000);
+  assert.equal(parseRupiahInput(" 1 234 567 "), 1_234_567);
+
+  // Empty is "no value", not zero — the caller decides what that means.
+  assert.equal(parseRupiahInput(""), null);
+  assert.equal(parseRupiahInput("Rp"), null);
+  // Minor units are not a thing users type: a fractional rupiah is refused, not rounded.
+  assert.equal(parseRupiahInput("50,5"), null);
+  assert.equal(parseRupiahInput("1.234,56"), null);
+  // Beyond 2^53 the digits stop being exact, so refuse instead of storing a wrong number.
+  assert.equal(parseRupiahInput("99999999999999999999"), null);
 });
 
 test("monthsUntil counts whole months and never returns zero", () => {

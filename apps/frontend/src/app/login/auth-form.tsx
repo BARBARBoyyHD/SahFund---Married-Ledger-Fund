@@ -3,12 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import {
-  fieldErrors,
-  signInSchema,
-  signUpSchema,
-  type FieldErrors,
-} from "@/lib/auth/schema";
+import { signInSchema, signUpSchema } from "@/lib/auth/schema";
+import { fieldErrors, type FieldErrors } from "@/lib/validation";
 import { BUTTON_PRIMARY, INPUT } from "@/components/landing/ui";
 
 export type Mode = "sign-up" | "sign-in";

@@ -7,18 +7,18 @@ SahFund is a two-person finance workspace for engaged couples in Indonesia: it i
 | Layer | Choice |
 |---|---|
 | App | Next.js 16 (App Router) on Cloudflare Workers via OpenNext |
-| Database | Neon Postgres (ap-southeast-1) via the `neon-http` driver |
+| Database | Cloudflare D1 (SQLite) via `drizzle-orm/d1` |
 | ORM | Drizzle ORM |
-| Auth | Better Auth — sessions in our own Postgres |
+| Auth | Better Auth — sessions in our own database (D1) |
 | Validation | Zod — one schema shared by client and server |
-| Money | `BIGINT` minor units (1/100 rupiah) |
+| Money | 64-bit integer minor units (1/100 rupiah) |
 | Tests | `node:test` (unit), Playwright (e2e) |
 | Styling | Tailwind CSS v4 (tokens in `@theme`, no JS config file) |
 
 Two invariants that surprise newcomers:
 
 - **Money is `BIGINT` minor units (1/100 rupiah).** Floats are banned from storage and arithmetic; parsing and formatting go through `src/core/money.ts` only (ITA §5).
-- **Multi-table writes use `db.batch()`, never `db.transaction()`.** The `neon-http` driver has no interactive transactions (ITA ADR-02) — collect the statements, then fire one atomic batch.
+- **Multi-table writes use `db.batch()`, never `db.transaction()`.** D1 has no interactive transactions (ITA ADR-13); `db.batch()` is atomic — collect the statements, then fire one atomic batch.
 
 ## Repo layout
 
@@ -35,7 +35,7 @@ SahFund/
             ├── app/         server components (reads) + route handlers (mutations)
             ├── core/        pure domain logic: reconcile, forecast, money — zero I/O
             ├── adapters/    StatementSource implementations (Jago PDF, generic CSV)
-            ├── lib/         db schema + Neon client, session helpers, report aggregates
+            ├── lib/         db schema + D1 client, session helpers, report aggregates
             └── components/  shared UI — presentational, no data fetching
 ```
 
@@ -50,12 +50,14 @@ cd apps/frontend
 npm install
 ```
 
-Environment: the Neon project link (`.neon`) lives in `apps/frontend`. Fill `.env` from Neon (Neon CLI required):
+Environment: no database URL is needed — D1 arrives as a Worker binding from `wrangler.jsonc`. Local dev state lives in `.wrangler/` (gitignored). Apply migrations locally with:
 
 ```bash
 cd apps/frontend
-neon env pull        # writes .env
+npx wrangler d1 migrations apply DB --local
 ```
+
+Secrets (`BETTER_AUTH_SECRET`, `RESEND_API_KEY`) go in `.dev.vars` (gitignored).
 
 `.env` is shared; `.env.development` and `.env.production` override per mode. `.env` holds live credentials and is gitignored — only `.env.example` is tracked. Never commit it.
 
@@ -79,7 +81,7 @@ UI changes also need a manual pass over loading, empty, error, and keyboard-only
 `GET /api/health` (short alias: `/health`) probes the database:
 
 - `200` → `{"status":"ok","db":"up"}`
-- `503` → `{"status":"error","db":"down"}` when Postgres is unreachable
+- `503` → `{"status":"error","db":"down"}` when D1 is unreachable
 
 The app never falls back to a blank dashboard or a zeroed-out total (ITA §2).
 

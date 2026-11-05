@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="SahFund">
+  <title>SahFund</title>
+  <defs>
+    <mask id="gap" maskUnits="userSpaceOnUse" maskContentUnits="userSpaceOnUse" x="0" y="0" width="48" height="48">
+      <rect width="48" height="48" fill="#FFFFFF"/>
+      <rect x="12" y="22" width="24" height="4" transform="rotate(45 24 24)" fill="#000000"/>
+    </mask>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="#0D3B2E"/>
+  <path d="M35 9H18L10.5 16.5L18 24H30L37.5 31.5L30 39H12"
+        fill="none" stroke="#F7F9F6" stroke-width="7"
+        stroke-linecap="butt" stroke-linejoin="miter" mask="url(#gap)"/>
+  <rect x="38" y="38" width="5" height="5" rx="1.25" fill="#DFBA73"/>
+</svg>

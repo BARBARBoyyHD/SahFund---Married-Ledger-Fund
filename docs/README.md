@@ -23,5 +23,6 @@ If code and docs disagree, stop and ask — do not silently pick a side.
 ## Other files
 
 - [ERD — Data Model](projects/ERD.md) — derived from ITA §5; not a source of truth
+- [SPEC — D1 migration](projects/SPEC-d1-migration.md) — change spec (not a source of truth)
 - [ui/lint.json](ui/lint.json) — lint rules for the UI (tool config, not a note; enable "Detect all file extensions" in Obsidian to see it).
 - [ui/html/design.html](ui/html/design.html) — static design preview (legacy cobalt/rose, not the approved style).

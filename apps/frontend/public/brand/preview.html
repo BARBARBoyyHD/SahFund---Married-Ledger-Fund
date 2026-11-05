@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SahFund — mark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --emerald:#0D3B2E; --emerald-deep:#082A20; --gold:#DFBA73;
+    --pearl:#F7F9F6; --ink:#12211B; --ink-muted:#4C5C54;
+    --gold-line:rgba(223,186,115,.35);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;padding:48px 20px 64px;
+    background:var(--emerald-deep);
+    background-image:linear-gradient(162deg,#11483A 0%,#0D3B2E 48%,#082A20 100%);
+    font-family:"Plus Jakarta Sans",system-ui,sans-serif;color:var(--ink);
+  }
+  .board{max-width:1080px;margin:0 auto;background:var(--pearl);border-radius:24px;padding:22px}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:4px 6px 18px}
+  .top h1{margin:0;font-size:14px;font-weight:800;letter-spacing:-.01em}
+  .top p{margin:2px 0 0;font-size:12px;color:var(--ink-muted);font-weight:500}
+  .card{background:#fff;border:1px solid var(--gold-line);border-radius:16px;padding:24px;margin-bottom:14px}
+  .card.field{
+    background:var(--emerald);
+    background-image:linear-gradient(162deg,#11483A 0%,#0D3B2E 48%,#082A20 100%);
+    border-color:rgba(223,186,115,.25);color:var(--pearl);
+  }
+  .label{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-muted);margin:0 0 18px}
+  .field .label{color:#C6D5CD}
+  .lockup{display:flex;align-items:baseline;gap:.25em;justify-content:center;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .lockup img{height:.88em;width:auto;display:block}
+  .hero{font-size:76px;padding:52px 20px}
+  .hero.field .lockup{color:var(--pearl)}
+  .row{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .variant{display:flex;flex-direction:column;align-items:center;gap:12px;padding:26px 12px;border:1px solid var(--gold-line);border-radius:12px;background:var(--pearl)}
+  .variant img{width:64px;height:64px}
+  .variant span{font-size:11px;font-weight:700;color:var(--ink-muted);letter-spacing:.04em}
+  .scales{display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap;justify-content:center;padding:8px 0}
+  .scales figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .field .scales figcaption{color:#C6D5CD}
+  .scales figcaption{font-size:10px;font-weight:700;color:var(--ink-muted);letter-spacing:.04em}
+  .downloads{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .dl{font-size:12px;font-weight:700;text-decoration:none;color:var(--emerald);border:1px solid var(--gold-line);background:#fff;padding:9px 13px;border-radius:9px}
+  .dl:hover{background:#E3EDE7}
+  .note{font-size:12.5px;line-height:1.6;color:var(--ink-muted);font-weight:500}
+  .note b{color:var(--ink)}
+  @media(max-width:760px){
+    body{padding:20px 12px 40px}
+    .hero{font-size:40px;padding:34px 10px}
+    .row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="board">
+  <div class="top">
+    <div>
+      <h1>SahFund — mark</h1>
+      <p>Constructed S · emerald + pearl + gold · 48 grid</p>
+    </div>
+    <div class="downloads">
+      <a class="dl" href="sahfund-mark.svg" download>Mark SVG</a>
+      <a class="dl" href="sahfund-mark-inverse.svg" download>Inverse SVG</a>
+    </div>
+  </div>
+
+  <div class="card hero">
+    <p class="label">Primary lockup</p>
+    <div class="lockup">
+      <img src="sahfund-mark.svg" alt="">
+      <span>SahFund</span>
+    </div>
+  </div>
+
+  <div class="card field hero">
+    <p class="label">Inverse · on the emerald field</p>
+    <div class="lockup">
+      <img src="sahfund-mark-inverse.svg" alt="">
+      <span>SahFund</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label">Variants</p>
+    <div class="row">
+      <div class="variant"><img src="sahfund-mark.svg" alt=""><span>Primary · emerald tile</span></div>
+      <div class="variant"><img src="sahfund-mark-inverse.svg" alt=""><span>Inverse · pearl tile</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label">Scale test</p>
+    <div class="scales">
+      <figure><img src="sahfund-mark.svg" width="64" height="64" alt=""><figcaption>64</figcaption></figure>
+      <figure><img src="sahfund-mark.svg" width="48" height="48" alt=""><figcaption>48</figcaption></figure>
+      <figure><img src="sahfund-mark.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure>
+      <figure><img src="sahfund-mark.svg" width="24" height="24" alt=""><figcaption>24</figcaption></figure>
+      <figure><img src="sahfund-mark.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="label">Construction</p>
+    <p class="note">
+      One stroked path on a <b>48×48</b> grid, stroke <b>7</b>, mitred 45° bends, cut by a
+      <b>4-unit diagonal gap</b> running top-left to bottom-right. Tile radius 12 (25%).
+      The seal is 5×5 at the bottom-right corner — the only place gold touches the mark.
+      <br>At 16px the stroke is 2.33px and the gap 1.33px.
+    </p>
+  </div>
+</div>
+</body>
+</html>

@@ -34,12 +34,12 @@ Pin exact versions in `package.json` (ITA §3). Never add a dependency for what 
 - **P2** Dialect types live only in `src/lib/db/schema.ts`. No `drizzle-orm/sqlite-core` import anywhere else.
 - **P3** `src/lib/db/index.ts` is the only module that imports the driver (`drizzle-orm/d1`) and the only one that classifies driver errors (e.g. a unique-constraint violation) — every other module sees plain results and typed errors.
 - **P4** `src/core/*` stays pure — no `fetch`, no `db`, no `process.env`, no implicit `Date.now`.
-- **P5** Money columns are `integer({ mode: 'bigint' })` — never `real`, never `mode: 'number'` on `*Minor` columns.
+- **P5** Money columns are `numeric({ mode: 'bigint' })` (Drizzle's SQLite `integer()` has no bigint mode) — never `real`, never `mode: 'number'` on `*Minor` columns.
 - **P6** No dialect functions in queries — no SQL-side `sha256`, JSON-path operators, `now()`, `gen_random_uuid()`, `ILIKE`, arrays. Ids, timestamps and hashes are generated app-side (see §7 DRY).
 - **P7** Multi-table writes: one `db.batch()`, never `db.transaction()` (§2).
 - **P8** A future swap = (1) change the dialect imports in `schema.ts`, (2) change the driver import in `db/index.ts`, (3) regenerate migrations. No other file changes.
 
-- The nine `neon-*` skills still installed under `.agents/skills/` + `skills-lock.json` **no longer apply**: the datastore is D1, not Postgres. Do not load them for database work; their removal is tracked as PEP D1 task f.
+- The nine `neon-*` skill packages under `.agents/skills/` **no longer apply**: the datastore is D1, not Postgres. Do not load them for database work; their `skills-lock.json` entries are removed and the machine-local directories are pending deletion (PEP D1 task f).
 - **Skills do not override §1.** If a skill (or your training data) recommends `node-postgres` + Hyperdrive, `@neondatabase/serverless`, or a repository abstraction over Drizzle, §1 and P1–P8 win — the whole point is that a database swap touches two files, not fifty.
 
 ---

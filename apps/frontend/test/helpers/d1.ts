@@ -27,6 +27,19 @@ export type D1Binding = {
   };
 };
 
+/**
+ * Fixture user for the auth FKs added in 0002 (`workspaces.ownerId`,
+ * `members.userId` → `user.id`): every domain row must point at a real account.
+ */
+export async function addUser(binding: D1Binding, id: string) {
+  await binding
+    .prepare(
+      `insert into user (id, name, email, email_verified, created_at, updated_at)
+       values ('${id}', '${id}', '${id}@test.local', 0, 0, 0)`,
+    )
+    .run();
+}
+
 async function applyMigrations(binding: D1Binding) {
   for (const file of readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort()) {
     const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
@@ -105,6 +118,7 @@ export async function runImportBatch(rows: number) {
   try {
     const binding = (await mf.getD1Database("DB")) as unknown as D1Binding;
     await applyMigrations(binding);
+    await addUser(binding, "u1");
     await binding.prepare("insert into workspaces (id, ownerId, name, inviteCode) values ('w1', 'u1', 'A', 'C1')").run();
 
     const response = await mf.dispatchFetch(`http://localhost/import?rows=${rows}`);

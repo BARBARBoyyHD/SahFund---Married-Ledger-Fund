@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import { after, before, it } from "node:test";
-import { eq } from "drizzle-orm";
+import { eq, lte, sql } from "drizzle-orm";
 import { startD1, runImportBatch, addUser } from "../helpers/d1.ts";
-import { categories, imports, members, transactions, user, workspaces } from "../../src/lib/db/schema.ts";
+import {
+  categories,
+  imports,
+  members,
+  rateLimits,
+  transactions,
+  user,
+  workspaces,
+} from "../../src/lib/db/schema.ts";
 
 /**
  * Integration tests against a local D1 (SPEC-d1-migration §9, T7).
@@ -32,7 +40,7 @@ it("applies the committed migrations and answers a probe", async () => {
   assert.equal(probe.results[0].ok, 1);
 
   // Every table in the schema is queryable, i.e. the migration really ran.
-  for (const table of [workspaces, members, categories, imports, transactions]) {
+  for (const table of [workspaces, members, categories, imports, transactions, rateLimits]) {
     assert.deepEqual(await h.db.select().from(table), []);
   }
 });
@@ -192,4 +200,34 @@ it("enforces the 0002 FKs: RESTRICT on the owner, SET NULL on attribution (ERD �
   await h.db.delete(members).where(eq(members.userId, "u-fk-member"));
   const [row] = await h.db.select().from(transactions).where(eq(transactions.workspaceId, "ws-fk"));
   assert.equal(row.memberId, null);
+});
+
+it("rate_limits: one row per (key, window), incremented in place; the next window is a new row", async () => {
+  const key = "ip:203.0.113.7";
+  const hit = (windowStart: number) =>
+    h.db
+      .insert(rateLimits)
+      .values({ key, windowStart: new Date(windowStart), count: 1, expiresAt: new Date(windowStart + 60_000) })
+      .onConflictDoUpdate({
+        target: [rateLimits.key, rateLimits.windowStart],
+        set: { count: sql`${rateLimits.count} + 1` },
+      });
+
+  await hit(0);
+  await hit(0);
+  await hit(0);
+  const [first] = await h.db.select().from(rateLimits).where(eq(rateLimits.key, key));
+  assert.equal(first.count, 3, "the composite PK makes the upsert the counter, no read-then-write");
+
+  await hit(60_000);
+  const rows = await h.db.select().from(rateLimits).where(eq(rateLimits.key, key));
+  assert.equal(rows.length, 2, "a new window is a new row — the old one is not reset");
+
+  // Expiry is derived, and the lazy sweep is a delete on the indexed column.
+  await h.db.delete(rateLimits).where(lte(rateLimits.expiresAt, new Date(60_000)));
+  const left = await h.db.select().from(rateLimits);
+  assert.deepEqual(
+    left.map((r) => [r.windowStart.getTime(), r.count]),
+    [[60_000, 1]],
+  );
 });

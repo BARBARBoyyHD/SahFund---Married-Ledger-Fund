@@ -258,6 +258,39 @@ export const commitments = sqliteTable(
   (t) => [index("commitments_workspace_due_idx").on(t.workspaceId, t.dueOn)],
 );
 
+/**
+ * Keyed fixed-window counters (brainstorm 2026-11-05 §2.4). No FK: the key is an
+ * opaque prefixed string — `ip:…`, `guest:…`, `user:…`, `ws:…` — because the table
+ * must work before a session exists.
+ *
+ * `windowStart` is the app-computed start of the current window, so the primary
+ * key *is* the window: one hit upserts (key, windowStart), the next window starts
+ * a new row. `expiresAt` (= windowStart + that key's policy window) is stored
+ * rather than derived because windows differ per key prefix (10/min vs 20/hour)
+ * and the sweep needs one indexable column.
+ *
+ * No cron in v1.0: expiry is derived at read (a row with `expiresAt <= now` is
+ * dead), and dead rows are swept by the write path (DELETE … WHERE expiresAt <= ?,
+ * app-side timestamp — P6).
+ * shortcut: the sweep rides on writes, so a key that stops being hit keeps one
+ * dead row per window until the next write sweeps it — bounded by keys × windows,
+ * and rows are tiny. Add a scheduled Worker only if that ever grows.
+ */
+export const rateLimits = sqliteTable(
+  "rate_limits",
+  {
+    key: text().notNull(),
+    windowStart: integer({ mode: "timestamp_ms" }).notNull(),
+    count: integer().notNull(),
+    expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.key, t.windowStart] }),
+    // The only query that is not a primary-key point lookup.
+    index("rate_limits_expires_idx").on(t.expiresAt),
+  ],
+);
+
 export type AuthUser = typeof user.$inferSelect;
 export type AuthSession = typeof session.$inferSelect;
 export type Workspace = typeof workspaces.$inferSelect;

@@ -13,6 +13,19 @@ export function formatRupiah(minor: number): string {
   return `${negative ? "−" : ""}Rp ${grouping.format(rupiah)}`;
 }
 
+const dateFormat = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  // The column is a calendar date (`YYYY-MM-DD`); UTC keeps it from sliding a day.
+  timeZone: "UTC",
+});
+
+/** The `date` column's ISO text to the id-ID form the user reads (AGENTS §6). */
+export function formatDate(iso: string): string {
+  return dateFormat.format(new Date(`${iso}T00:00:00Z`));
+}
+
 /** Whole rupiah to minor units, for form input that collects thousands. */
 export function rupiahToMinor(rupiah: number): number {
   return Math.round(rupiah) * MINOR_PER_RUPIAH;

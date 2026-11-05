@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { forecast, monthsUntil } from "./forecast.ts";
-import { formatRupiah, parseRupiahInput, rupiahToMinor } from "./money.ts";
+import { formatDate, formatRupiah, parseRupiahInput, rupiahToMinor } from "./money.ts";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
@@ -9,6 +9,11 @@ test("formatRupiah groups in id-ID and keeps the sign", () => {
   assert.equal(formatRupiah(123456700), "Rp 1.234.567");
   assert.equal(formatRupiah(0), "Rp 0");
   assert.equal(formatRupiah(-5000000), "−Rp 50.000");
+});
+
+test("formatDate renders a calendar date in id-ID without shifting the day", () => {
+  assert.equal(formatDate("2027-06-03"), "3 Juni 2027");
+  assert.equal(formatDate("2026-11-05"), "5 November 2026");
 });
 
 test("rupiahToMinor never produces a fraction", () => {

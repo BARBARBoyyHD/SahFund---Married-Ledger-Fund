@@ -8,7 +8,10 @@ import { getAuth } from "@/lib/auth/auth";
  * every protected page and route handler resolves the session here, server-side.
  */
 export async function getSession() {
-  return getAuth().api.getSession({ headers: await headers() });
+  // Read the request first: this is the dynamic boundary Cache Components needs, and
+  // `getAuth()` needs the Cloudflare context that only exists at request time.
+  const requestHeaders = await headers();
+  return getAuth().api.getSession({ headers: requestHeaders });
 }
 
 /**

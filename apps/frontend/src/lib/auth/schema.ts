@@ -28,10 +28,25 @@ export const signInSchema = z.object({
   email,
   // Sign-in does not restate the length policy: that would tell a stranger our rules.
   password: z.string().min(1, "Kata sandi wajib diisi."),
+  /** Where to land afterwards (US-53 join link). Sanitised by `safeNext`, never trusted. */
+  next: z.string().optional(),
 });
 
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
+
+/**
+ * The only `next` a sign-in may return to: a same-origin relative path (design D8).
+ * `//host` is protocol-relative and `/\host` is normalised to it by browsers; a scheme
+ * cannot follow a leading slash. Anything else is dropped — the caller falls back.
+ */
+export function safeNext(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > 512) return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  // Backslashes, tabs and newlines are rewritten by URL parsers before they resolve.
+  if (/[\\\u0000-\u001f]/.test(value)) return null;
+  return value;
+}
 
 export type FieldErrors<T> = Partial<Record<keyof T, string>>;
 

@@ -5,6 +5,7 @@ import { getAuth } from "@/lib/auth/auth";
 import { AUTH_LIMIT, allowAttempt, clientKey } from "@/lib/auth/rate-limit";
 import {
   fieldErrors,
+  safeNext,
   signInSchema,
   signUpSchema,
   type SignInInput,
@@ -111,13 +112,19 @@ export async function POST(request: Request) {
             returnHeaders: true,
           })
         : await auth.api.signInEmail({
-            body: attempt.input,
+            body: { email: attempt.input.email, password: attempt.input.password },
             headers: request.headers,
             returnHeaders: true,
           });
 
-    // shortcut: no dashboard route yet (PEP M2) — land on "/" until it exists.
-    const response = NextResponse.json({ redirectTo: "/" }, { status: 200 });
+    // US-01: a new account starts at workspace creation. US-53: a sign-in may return to
+    // a same-origin relative `next`; anything else lands on the dashboard (design D8).
+    const redirectTo =
+      attempt.kind === "sign-up"
+        ? "/workspaces/new"
+        : (safeNext(attempt.input.next) ?? "/dashboard");
+
+    const response = NextResponse.json({ redirectTo }, { status: 200 });
     for (const cookie of answered.headers.getSetCookie()) {
       response.headers.append("set-cookie", cookie);
     }

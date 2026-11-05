@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { after, before, it } from "node:test";
 import { eq } from "drizzle-orm";
-import { startD1, runImportBatch } from "../helpers/d1.ts";
-import { categories, imports, members, transactions, workspaces } from "../../src/lib/db/schema.ts";
+import { startD1, runImportBatch, addUser } from "../helpers/d1.ts";
+import { categories, imports, members, transactions, user, workspaces } from "../../src/lib/db/schema.ts";
 
 /**
  * Integration tests against a local D1 (SPEC-d1-migration §9, T7).
@@ -38,6 +38,8 @@ it("applies the committed migrations and answers a probe", async () => {
 });
 
 it("rolls back the whole batch when a later statement fails (R2 — the atomicity authority)", async () => {
+  await addUser(h.binding, "u-atomic");
+  await addUser(h.binding, "u-atomic-2");
   const error = await h.db
     .batch([
       h.db.insert(workspaces).values({ id: "ws-atomic", ownerId: "u-atomic", name: "A", inviteCode: "INV-ATOMIC" }),
@@ -68,6 +70,8 @@ it("stores a 5,000-row import in a single batch inside workerd (R3, BRD FR-03)",
 });
 
 it("rejects a second owner in the same workspace and rolls the batch back (E10)", async () => {
+  await addUser(h.binding, "u-owner");
+  await addUser(h.binding, "u-second");
   await h.db.insert(workspaces).values({ id: "ws-cap", ownerId: "u-owner", name: "Cap", inviteCode: "INV-CAP" });
   await h.db.insert(members).values({ workspaceId: "ws-cap", userId: "u-owner", role: "owner" });
 
@@ -87,6 +91,8 @@ it("rejects a second owner in the same workspace and rolls the batch back (E10)"
 });
 
 it("rejects a role outside owner/member via the CHECK constraint", async () => {
+  await addUser(h.binding, "u-role");
+  await addUser(h.binding, "u-admin");
   await h.db.insert(workspaces).values({ id: "ws-role", ownerId: "u-role", name: "Role", inviteCode: "INV-ROLE" });
 
   await assert.rejects(
@@ -97,6 +103,7 @@ it("rejects a role outside owner/member via the CHECK constraint", async () => {
 });
 
 it("rejects a duplicate (workspaceId, dedupeHash) and rolls the batch back", async () => {
+  await addUser(h.binding, "u-dedupe");
   await h.db.insert(workspaces).values({ id: "ws-dedupe", ownerId: "u-dedupe", name: "Dedupe", inviteCode: "INV-DEDUPE" });
   const row = (dedupeHash: string) => ({
     workspaceId: "ws-dedupe",
@@ -129,6 +136,9 @@ it("surfaces unique violations in the shape isUniqueViolation() must detect (P3 
   // this pins the driver contract it will rely on: D1 reports
   // `D1_ERROR: UNIQUE constraint failed: <table>.<column>: SQLITE_CONSTRAINT
   // (extended: SQLITE_CONSTRAINT_UNIQUE)`, and the CHECK error never matches.
+  await addUser(h.binding, "u-shape");
+  await addUser(h.binding, "u-shape-2");
+  await addUser(h.binding, "u-shape-3");
   await h.db.insert(workspaces).values({ ownerId: "u-shape", name: "Shape", inviteCode: "INV-SHAPE" });
 
   const unique = await h.db
@@ -151,4 +161,35 @@ it("surfaces unique violations in the shape isUniqueViolation() must detect (P3 
     );
   assert.match(check, /CHECK constraint failed/);
   assert.doesNotMatch(check, /UNIQUE/);
+});
+
+it("enforces the 0002 FKs: RESTRICT on the owner, SET NULL on attribution (ERD §4 #4, #13)", async () => {
+  await addUser(h.binding, "u-fk-owner");
+  await addUser(h.binding, "u-fk-member");
+  await h.db.insert(workspaces).values({ id: "ws-fk", ownerId: "u-fk-owner", name: "FK", inviteCode: "INV-FK" });
+  await h.db.insert(members).values([
+    { workspaceId: "ws-fk", userId: "u-fk-owner", role: "owner" },
+    { workspaceId: "ws-fk", userId: "u-fk-member", role: "member" },
+  ]);
+  await h.db.insert(transactions).values({
+    workspaceId: "ws-fk",
+    memberId: "u-fk-member",
+    occurredOn: "2026-11-01",
+    description: "Attributed",
+    amountMinor: BigInt(-1),
+    balanceMinor: BigInt(1),
+    direction: "out",
+    source: "jago",
+    dedupeHash: "hash-fk",
+  });
+
+  // An account that owns a workspace cannot be deleted out from under it.
+  await assert.rejects(
+    h.db.delete(user).where(eq(user.id, "u-fk-owner")),
+    (e: unknown) => /FOREIGN KEY constraint failed/.test(driverMessage(e)),
+  );
+  // A member leaving drops the attribution, never the money row.
+  await h.db.delete(members).where(eq(members.userId, "u-fk-member"));
+  const [row] = await h.db.select().from(transactions).where(eq(transactions.workspaceId, "ws-fk"));
+  assert.equal(row.memberId, null);
 });

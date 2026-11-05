@@ -15,6 +15,13 @@
       "when": 1793777239634,
       "tag": "0001_last_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793848956757,
+      "tag": "0002_groovy_queen_noir",
+      "breakpoints": true
     }
   ]
 }

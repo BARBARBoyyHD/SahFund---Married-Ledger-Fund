@@ -15,14 +15,14 @@ import { emailField } from "../auth/schema.ts";
  */
 
 const workspaceName = z
-  .string()
+  .string({ error: "Nama workspace wajib diisi." })
   .trim()
   .min(2, "Nama workspace minimal 2 karakter.")
   .max(80, "Nama workspace maksimal 80 karakter.");
 
 /** `YYYY-MM-DD`, the column's ISO text form. An empty input means "not set". */
 const weddingDate = z
-  .string()
+  .string({ error: "Tanggal belum benar. Gunakan format YYYY-MM-DD." })
   .trim()
   .refine(
     (value) => value === "" || z.iso.date().safeParse(value).success,
@@ -32,7 +32,7 @@ const weddingDate = z
 
 /** Rupiah as typed in a form; `null` output means "no target". */
 const budgetTarget = z
-  .string()
+  .string({ error: "Nominal belum benar. Tulis angka rupiah, misalnya 50.000.000." })
   .trim()
   .max(20, "Nominal terlalu besar.")
   .refine(
@@ -58,7 +58,7 @@ export const createWorkspaceSchema = z
 
 export const joinWorkspaceSchema = z.object({
   code: z
-    .string()
+    .string({ error: "Kode undangan wajib diisi." })
     .trim()
     .refine(
       isValidPocketCode,

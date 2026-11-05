@@ -102,6 +102,17 @@ test("details update accepts one field, both, and refuses an empty body", () => 
   );
 });
 
+test("a missing required field still answers in Bahasa Indonesia", () => {
+  const noName = createWorkspaceSchema.safeParse({});
+  assert.equal(noName.success === false && noName.error.issues[0]?.message, "Nama workspace wajib diisi.");
+
+  const noCode = joinWorkspaceSchema.safeParse({});
+  assert.equal(noCode.success === false && noCode.error.issues[0]?.message, "Kode undangan wajib diisi.");
+
+  const noEmail = inviteSchema.safeParse({});
+  assert.equal(noEmail.success === false && noEmail.error.issues[0]?.message, "Email wajib diisi.");
+});
+
 test("invite takes the same email rule as sign-up", () => {
   assert.equal(inviteSchema.safeParse({ email: "partner@example.com" }).success, true);
   assert.equal(inviteSchema.safeParse({ email: "bukan-email" }).success, false);

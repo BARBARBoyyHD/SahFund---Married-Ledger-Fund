@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 
 export const emailField = z
-  .string()
+  .string({ error: "Email wajib diisi." })
   .trim()
   .min(1, "Email wajib diisi.")
   .max(254, "Email terlalu panjang.")

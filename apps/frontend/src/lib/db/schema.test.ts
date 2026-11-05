@@ -29,7 +29,7 @@ test("every money column is 64-bit — P5, never a float, never a JS number", ()
 });
 
 test("money is exact only up to 2^53-1: D1 hands INTEGER back as a JS number", () => {
-  // Verified with `wrangler d1 execute sahfund --local`: inserting 9007199254740993
+  // Verified with `wrangler d1 execute DB --local`: inserting 9007199254740993
   // reads back 9007199254740992, while SQLite itself stores it exactly
   // (`v = 9007199254740993` → 1). mode: 'bigint' reads via BigInt(number), so this
   // boundary is the documented supported range (SPEC §10 E4): ~Rp 90 trillion per row.

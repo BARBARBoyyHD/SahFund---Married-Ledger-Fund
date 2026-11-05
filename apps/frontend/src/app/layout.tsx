@@ -31,7 +31,8 @@ setTimeout(function () {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="id" className={`${jakarta.variable} h-full`}>
+    // `js` is set on <html> by ARM_REVEAL before hydration; that class diff is intended.
+    <html lang="id" className={`${jakarta.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full bg-surface font-sans text-body text-tertiary antialiased">
         <script dangerouslySetInnerHTML={{ __html: ARM_REVEAL }} />
         {children}

@@ -18,10 +18,10 @@ If code and docs disagree, stop and ask — do not silently pick a side.
 
 ## UI
 
-- **[DESIGN.md](ui/DESIGN.md)** — design tokens and UI guidance: colors, typography, layout, components, do's and don'ts.
+- **[DESIGN.md](ui/DESIGN.md)** — the approved design system (emerald/gold/pearl): tokens, gradients, motion, components, contrast. Live on the landing page; the dashboard still uses the legacy tokens noted there.
 
 ## Other files
 
 - [ERD — Data Model](projects/ERD.md) — derived from ITA §5; not a source of truth
 - [ui/lint.json](ui/lint.json) — lint rules for the UI (tool config, not a note; enable "Detect all file extensions" in Obsidian to see it).
-- [ui/html/design.html](ui/html/design.html) — static design preview.
+- [ui/html/design.html](ui/html/design.html) — static design preview (legacy cobalt/rose, not the approved style).

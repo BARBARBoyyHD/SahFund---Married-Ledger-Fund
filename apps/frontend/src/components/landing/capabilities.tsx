@@ -1,30 +1,35 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { formatRupiah } from "@/core/money";
 import { MemberChip } from "@/components/landing/member-chip";
-import { Container, Section } from "@/components/landing/ui";
+import { Container, Eyebrow, Section } from "@/components/landing/ui";
 import { BUDGETS, CLOSING_MINOR, COMMITMENTS, FORECAST, ROWS } from "@/lib/landing-demo";
 
 function Panel({
   title,
   body,
+  index,
   className = "",
   children,
 }: {
   title: string;
   body: string;
+  index: number;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <article
+    <div
       data-reveal
-      className={`rounded-md bg-emerald-soft p-6 lg:p-8 ${className}`}
+      className={`min-w-0 ${className}`}
+      style={{ "--stagger": index } as CSSProperties}
     >
-      <h3 className="text-h3 font-bold text-ink">{title}</h3>
-      <p className="mt-2 max-w-[42ch] text-body text-ink-muted">{body}</p>
-      <div className="mt-6">{children}</div>
-    </article>
+      <article className="lift h-full rounded-md panel-surface p-6 lg:p-8">
+        <h3 className="text-h3 font-bold text-ink">{title}</h3>
+        <p className="mt-2 max-w-[42ch] text-body text-ink-muted">{body}</p>
+        <div className="mt-6">{children}</div>
+      </article>
+    </div>
   );
 }
 
@@ -32,7 +37,7 @@ function LedgerSlice() {
   return (
     <div
       data-ui
-      className="rounded-sm border border-gold bg-surface px-4 py-2"
+      className="rounded-sm border border-gold card-sheen bg-surface px-4 py-2"
     >
       {ROWS.map((row) => (
         <div
@@ -59,7 +64,7 @@ function LedgerSlice() {
 
 function BudgetRows() {
   return (
-    <div data-ui className="rounded-sm border border-gold bg-surface p-4">
+    <div data-ui className="rounded-sm border border-gold card-sheen bg-surface p-4">
       {BUDGETS.map((budget) => {
         const percent = Math.round(
           (budget.spentMinor / budget.budgetMinor) * 100,
@@ -98,7 +103,7 @@ function BudgetRows() {
 
 function CommitmentRows() {
   return (
-    <div data-ui className="rounded-sm border border-gold bg-surface p-4">
+    <div data-ui className="rounded-sm border border-gold card-sheen bg-surface p-4">
       {COMMITMENTS.map((commitment) => (
         <div key={commitment.vendor} className="py-2.5">
           <div className="flex items-baseline justify-between gap-3">
@@ -122,7 +127,7 @@ function CommitmentRows() {
 
 function ShareSlice() {
   return (
-    <div data-ui className="rounded-sm border border-gold bg-surface p-4">
+    <div data-ui className="rounded-sm border border-gold card-sheen bg-surface p-4">
       <p className="truncate rounded-xs bg-emerald-soft px-3 py-2.5 text-small font-semibold">
         sahund.id/r/ayu-budi-7k2
       </p>
@@ -151,7 +156,8 @@ export function Capabilities() {
   return (
     <Section id="yang-dicatat">
       <Container>
-        <h2 data-reveal className="text-h2 font-bold text-ink">
+        <Eyebrow>Catatan</Eyebrow>
+        <h2 data-reveal className="mt-4 text-h2 font-bold text-ink">
           Yang dicatat
         </h2>
 
@@ -159,6 +165,7 @@ export function Capabilities() {
           <Panel
             title="Setiap rupiah punya pemilik"
             body="Setoran dan belanja membawa warna kontributornya. Terlihat siapa yang sudah setor lebih banyak tanpa dihitung ulang."
+            index={0}
             className="lg:col-span-7"
           >
             <LedgerSlice />
@@ -167,6 +174,7 @@ export function Capabilities() {
           <Panel
             title="Anggaran per kategori"
             body="Kategori pernikahan sudah terisi saat workspace dibuat. Sisa tiap kategori dihitung dari transaksi yang masuk."
+            index={1}
             className="lg:col-span-5"
           >
             <BudgetRows />
@@ -175,6 +183,7 @@ export function Capabilities() {
           <Panel
             title="Komitmen vendor"
             body="Nilai kontrak, DP yang sudah dibayar, dan tanggal pelunasan. Yang belum lunas ikut dihitung di proyeksi."
+            index={2}
             className="lg:col-span-5"
           >
             <CommitmentRows />
@@ -183,6 +192,7 @@ export function Capabilities() {
           <Panel
             title="Satu tautan untuk keluarga"
             body="Laporan hanya-baca untuk orang tua atau wedding organizer, tanpa memberi mereka akses ke catatan kalian."
+            index={3}
             className="lg:col-span-7"
           >
             <ShareSlice />

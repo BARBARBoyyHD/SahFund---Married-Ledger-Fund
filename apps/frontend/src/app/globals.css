@@ -19,7 +19,11 @@
      Landing, login, and 404 only — the dashboard stays on the tokens above. */
   --color-emerald: #0d3b2e;
   --color-emerald-deep: #082a20;
+  --color-emerald-lift: #11483a;
+  --color-emerald-glow: #1c6a50;
   --color-emerald-soft: #e3ede7;
+  --color-emerald-mist: #e8f1eb;
+  --color-emerald-shade: #c7d9cf;
   --color-gold: #dfba73;
   --color-gold-hover: #e8c98a;
   --color-gold-line: #8e856d;
@@ -27,6 +31,11 @@
   --color-pearl-muted: #c6d5cd;
   --color-ink: #12211b;
   --color-ink-muted: #4c5c54;
+
+  /* Landing-only depth: soft, green-tinted, never a hard drop shadow. */
+  --shadow-card: 0 36px 70px -40px rgb(4 20 15 / 0.7);
+  --shadow-lift: 0 16px 30px -18px rgb(4 20 15 / 0.5);
+  --shadow-nav: 0 14px 34px -30px rgb(4 20 15 / 0.55);
 
   --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
 
@@ -96,20 +105,167 @@
 }
 
 @layer utilities {
+  /* Hero backdrop: 1px gold ledger rulings on a 96px column beat, not a colour wash. */
+  .ledger-rules {
+    background-image: linear-gradient(
+      to right,
+      var(--color-gold) 1px,
+      transparent 1px
+    );
+    background-size: 96px 100%;
+  }
+
+  /* One continuous hero field: emerald graded dark-to-deep, no plate inside it. */
+  .hero-field {
+    background-color: var(--color-emerald);
+    background-image: linear-gradient(
+      162deg,
+      var(--color-emerald-lift) 0%,
+      var(--color-emerald) 48%,
+      var(--color-emerald-deep) 100%
+    );
+  }
+
+  /* The only luminous layer: warm gold top-right, green lift top-left. */
+  .hero-aurora {
+    background-image:
+      radial-gradient(
+        42rem 30rem at 84% 8%,
+        color-mix(in srgb, var(--color-gold) 22%, transparent) 0%,
+        transparent 68%
+      ),
+      radial-gradient(
+        38rem 28rem at 4% -6%,
+        color-mix(in srgb, var(--color-emerald-glow) 60%, transparent) 0%,
+        transparent 66%
+      );
+  }
+
+  /* Section panels: light graded emerald, warm corner, gold hairline, soft lift. */
+  .panel-surface {
+    background-color: var(--color-emerald-soft);
+    background-image:
+      radial-gradient(
+        70% 62% at 86% -8%,
+        color-mix(in srgb, var(--color-gold) 22%, transparent) 0%,
+        transparent 60%
+      ),
+      linear-gradient(
+        158deg,
+        var(--color-emerald-mist) 0%,
+        var(--color-emerald-soft) 40%,
+        var(--color-emerald-shade) 100%
+      );
+    border: 1px solid color-mix(in srgb, var(--color-gold) 35%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.55),
+      0 32px 64px -44px rgb(6 28 22 / 0.55);
+  }
+
+  /* Inner data cards: white graded to pearl, seated with a top highlight and soft edge. */
+  .card-sheen {
+    background-color: var(--color-surface);
+    background-image: linear-gradient(
+      180deg,
+      var(--color-surface) 0%,
+      #fafbf7 58%,
+      #f4f7f2 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 16px 32px -26px rgb(6 28 22 / 0.6);
+  }
+
+  /* Cards that lift on hover. Pointer-only so touch does not get stuck lifted. */
+  .lift {
+    transition:
+      transform 280ms var(--ease-out),
+      box-shadow 280ms var(--ease-out),
+      border-color 280ms var(--ease-out);
+  }
+
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card);
+    }
+  }
+
   /* Reveal. The hidden start exists only when script runs and motion is allowed. */
   @media (prefers-reduced-motion: no-preference) {
     .js [data-reveal] {
       opacity: 0;
-      transform: translateY(18px);
+      transform: translateY(26px) scale(0.985);
       transition:
         opacity 700ms var(--ease-out),
-        transform 700ms var(--ease-out);
+        transform 780ms var(--ease-out);
       transition-delay: calc(var(--stagger, 0) * 80ms);
     }
 
     .js [data-reveal][data-in] {
       opacity: 1;
       transform: none;
+    }
+
+    /* Hero entrance: copy rises, the product settles. */
+    .enter {
+      animation: enter-up 760ms var(--ease-expo) both;
+      animation-delay: var(--d, 0ms);
+    }
+
+    .enter-card {
+      animation: enter-settle 900ms var(--ease-expo) both;
+      animation-delay: var(--d, 0ms);
+    }
+
+    .hero-aurora {
+      animation: aurora-drift 26s ease-in-out infinite alternate;
+    }
+
+    /* Ledger rows land one after another, after the card has settled. */
+    .demo-row {
+      animation: row-in 480ms var(--ease-out) both;
+      animation-delay: calc(720ms + var(--row, 0) * 90ms);
+    }
+
+    @keyframes enter-up {
+      from {
+        opacity: 0;
+        transform: translateY(22px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @keyframes enter-settle {
+      from {
+        opacity: 0;
+        transform: translateY(34px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @keyframes aurora-drift {
+      from {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      to {
+        transform: translate3d(-3%, 2%, 0) scale(1.08);
+      }
+    }
+
+    @keyframes row-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
     }
 
     /* Masked line reveal: each authored headline line owns its baseline. */

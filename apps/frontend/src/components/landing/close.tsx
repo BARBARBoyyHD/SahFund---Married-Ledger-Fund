@@ -15,7 +15,7 @@ const FOOTER_LINKS = [
 /** The close flips the page: emerald field, the same invitation, one action (DESIGN.md bookend). */
 export function Close() {
   return (
-    <div className="bg-emerald text-pearl [--focus-ring:var(--color-gold)]">
+    <div className="hero-field text-pearl [--focus-ring:var(--color-gold)]">
       <section className="flex min-h-[80svh] flex-col justify-between pt-20 pb-10 lg:pt-28">
         <Container>
           <h2 data-reveal className="text-display font-extrabold">

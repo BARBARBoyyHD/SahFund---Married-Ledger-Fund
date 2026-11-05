@@ -23,7 +23,7 @@ export async function LoginPanel({
     <>
       <nav
         aria-label="Pilih mode"
-        className="mt-7 grid grid-cols-2 gap-1 rounded-sm bg-neutral p-1"
+        className="grid grid-cols-2 gap-1 rounded-sm border border-gold/40 bg-pearl p-1"
       >
         {MODES.map((item) => {
           const active = item === mode;
@@ -35,8 +35,8 @@ export async function LoginPanel({
               aria-current={active ? "page" : undefined}
               className={`flex h-10 items-center justify-center rounded-xs text-small font-bold transition-colors duration-150 ${
                 active
-                  ? "bg-surface text-primary"
-                  : "text-muted hover:text-tertiary"
+                  ? "bg-emerald text-pearl"
+                  : "text-ink-muted hover:text-emerald"
               }`}
             >
               {COPY[item].tab}

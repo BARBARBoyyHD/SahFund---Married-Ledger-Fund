@@ -1,4 +1,6 @@
-import { Container, Section } from "@/components/landing/ui";
+import type { CSSProperties } from "react";
+
+import { Container, Eyebrow, Section } from "@/components/landing/ui";
 
 const QUESTIONS = [
   {
@@ -39,21 +41,22 @@ export function Faq() {
       <Container>
         <div className="lg:grid lg:grid-cols-12 lg:gap-12">
           <div className="lg:col-span-4">
-            <h2
-              data-reveal
-              className="text-h2 font-bold text-ink lg:sticky lg:top-24"
-            >
-              Pertanyaan
-            </h2>
+            <div className="lg:sticky lg:top-24">
+              <Eyebrow>Tanya jawab</Eyebrow>
+              <h2 data-reveal className="mt-4 text-h2 font-bold text-ink">
+                Pertanyaan
+              </h2>
+            </div>
           </div>
 
           <div className="mt-8 space-y-2 lg:col-span-8 lg:mt-0">
-            {QUESTIONS.map((item) => (
+            {QUESTIONS.map((item, index) => (
               <details
                 key={item.question}
                 name="faq"
                 data-reveal
-                className="group rounded-sm border border-gold bg-surface transition-colors duration-200 open:border-emerald open:bg-emerald"
+                className="group card-sheen rounded-sm border border-gold bg-surface transition-colors duration-200 open:border-emerald open:bg-emerald open:bg-none"
+                style={{ "--stagger": index } as CSSProperties}
               >
                 <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-6 px-5 py-4 text-h3 font-bold text-ink [&::-webkit-details-marker]:hidden group-open:text-pearl">
                   {item.question}

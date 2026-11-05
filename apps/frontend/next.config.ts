@@ -1,4 +1,8 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
+
+// Gives `next dev` the Worker bindings (D1 "DB" among them) via wrangler's platform proxy.
+initOpenNextCloudflareForDev();
 
 const nextConfig: NextConfig = {
   /* config options here */

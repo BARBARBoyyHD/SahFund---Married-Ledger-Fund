@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sahfund",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-04",
+  // Better Auth (Node crypto/Buffer) needs the Node.js compatibility layer (ITA §11, gotcha 2).
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  // D1 is the only datastore (ITA ADR-13). The binding is configuration, not a secret.
+  // The dev database (`sahfunddb`) was created in the Cloudflare dashboard; its id is below.
+  // `wrangler d1 create sahfund-preview` is still needed for the preview database.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sahfunddb",
+      "database_id": "a7495b0b-f639-4abd-a059-16512d5b5485",
+      "migrations_dir": "drizzle",
+    },
+  ],
+  "env": {
+    // A deployed preview never reads production rows: it binds its own database.
+    "preview": {
+      "name": "sahfund-preview",
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "sahfund-preview",
+          "database_id": "REPLACE_WITH_ID_FROM_wrangler-d1-create-sahfund-preview",
+          "migrations_dir": "drizzle",
+        },
+      ],
+    },
+  },
+}

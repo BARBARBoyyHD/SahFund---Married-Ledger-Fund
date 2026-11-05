@@ -18,44 +18,42 @@ If code and docs disagree, stop and ask — do not silently pick a side.
 | Layer | Choice | Notes |
 |---|---|---|
 | App | Next.js 16 (App Router) on Cloudflare Workers via OpenNext | `proxy.ts`, not `middleware.ts` (Next 16) |
-| DB | Neon Postgres (ap-southeast-1), **`neon-http` driver** | HTTP driver, no connection pool |
-| ORM | Drizzle ORM | SQL-first, edge-compatible |
-| Auth | Better Auth | sessions in our Postgres |
+| DB | Cloudflare D1 (SQLite) via `drizzle-orm/d1` | `env.DB` binding, no connection pool; **no interactive transactions** |
+| ORM | Drizzle ORM | SQL-first, sqlite dialect, edge-compatible |
+| Auth | Better Auth | sessions in our own database (D1) |
 | Validation | Zod | one schema shared client + server |
-| Money | `BIGINT` minor units (1/100 rupiah) | **floats banned** from storage and arithmetic |
+| Money | 64-bit integer minor units (1/100 rupiah) — SQLite `INTEGER`, Drizzle `mode: 'bigint'` | **floats banned** from storage and arithmetic |
 | Tests | `node:test` (unit), Playwright (e2e) | |
 
 Pin exact versions in `package.json` (ITA §3). Never add a dependency for what a few lines do.
 
-**Neon skills — use them for database work.** Nine are installed (project scope `SahFund\.agents\skills\` + `skills-lock.json`, also global `C:\Users\USER\.config\opencode\skills\`):
+**Cloudflare D1 — source of truth.** D1 behaviour and limits: `https://developers.cloudflare.com/d1/llms.txt` (append `.md` to any page to fetch it as Markdown). Prefer current docs over training data.
 
-| Skill | Use for |
-|---|---|
-| `neon` | overview / entry point |
-| `neon-postgres` | **the main one for DB work** — SQL, schema, connections, pooled vs direct, migrations, branching, autoscaling, search |
-| `neon-postgres-branches` | branch types for dev/test/CI |
-| `neon-postgres-egress-optimizer` | diagnosing egress / data-transfer cost |
-| `neon-auth` | Managed Better Auth |
-| `neon-object-storage` | buckets / S3 |
-| `neon-realtime` | live queries |
-| `neon-functions`, `neon-ai-gateway` | **not used in v1.0 (§10)** — listed for completeness |
+**Portability rules (P1–P8) — the dialect lives in two files, nothing else.** These are what keep a future database swap at three steps:
+- **P1** All DB access goes through Drizzle's query builder, **no raw SQL** — two allowlists: constraint/default expressions inside `schema.ts`, and the `select 1` fragment inside `probeDb()` (`src/lib/db/index.ts`).
+- **P2** Dialect types live only in `src/lib/db/schema.ts`. No `drizzle-orm/sqlite-core` import anywhere else.
+- **P3** `src/lib/db/index.ts` is the only module that imports the driver (`drizzle-orm/d1`) and the only one that classifies driver errors (e.g. a unique-constraint violation) — every other module sees plain results and typed errors.
+- **P4** `src/core/*` stays pure — no `fetch`, no `db`, no `process.env`, no implicit `Date.now`.
+- **P5** Money columns are `integer({ mode: 'bigint' })` — never `real`, never `mode: 'number'` on `*Minor` columns.
+- **P6** No dialect functions in queries — no SQL-side `sha256`, JSON-path operators, `now()`, `gen_random_uuid()`, `ILIKE`, arrays. Ids, timestamps and hashes are generated app-side (see §7 DRY).
+- **P7** Multi-table writes: one `db.batch()`, never `db.transaction()` (§2).
+- **P8** A future swap = (1) change the dialect imports in `schema.ts`, (2) change the driver import in `db/index.ts`, (3) regenerate migrations. No other file changes.
 
-- Freshness check: run `neon skills status` **from the project root `SahFund`, not from `apps\frontend`** — the lockfile lives at the project root, so from `apps\frontend` it falsely reports "No Neon skills". Update with `neon skills update -y`; that can fail on the GitHub API rate limit when unauthenticated — set `GITHUB_TOKEN`.
-- Neon docs are the source of truth for Neon-specific behaviour: index `https://neon.com/docs/llms.txt`; append `.md` to any page to fetch it as markdown (e.g. `https://neon.com/docs/introduction/branching.md`). Prefer fetching current docs over training data.
-- **Known divergence — do not silently "fix" it:** the Neon skill recommends `node-postgres` + Cloudflare Hyperdrive (or `@neondatabase/serverless` elsewhere), but this project is fixed on **`neon-http`** — a deliberate decision (§1 table, ITA ADR-02). The skill does not override §1. If the hosting runtime changes, revisit §1 explicitly — don't let a skill drift it.
+- The nine `neon-*` skills still installed under `.agents/skills/` + `skills-lock.json` **no longer apply**: the datastore is D1, not Postgres. Do not load them for database work; their removal is tracked as PEP D1 task f.
+- **Skills do not override §1.** If a skill (or your training data) recommends `node-postgres` + Hyperdrive, `@neondatabase/serverless`, or a repository abstraction over Drizzle, §1 and P1–P8 win — the whole point is that a database swap touches two files, not fifty.
 
 ---
 
 ## 2. Database writes and "transactions"
 
-**Hard constraint (ITA §11.4, ADR-02): `neon-http` has no interactive transactions. `db.transaction()` WILL NOT WORK on this driver. Do not write it.**
+**Hard constraint (ITA §11 gotcha 4, ADR-13): D1 has no interactive transactions. `db.transaction()` WILL NOT WORK on the `drizzle-orm/d1` driver. Do not write it — `db.batch()` is the atomic primitive (D1 rolls the whole sequence back on failure).**
 
 Rules:
 
 - **Multi-table writes go through `db.batch()`** — one atomic batch per request. The import row and its 5,000 transaction rows are written in a single `db.batch()`; a partial import must be impossible.
 - Never split one logical write across two requests or two batches. If a handler needs to write to more than one table, collect all statements first, then fire one batch.
 - Batch means "all statements queued, then executed" — do not `await` statement A, then decide whether to run statement B based on A's result. That is two round-trips and a race window.
-- Migrations: `drizzle-kit generate` → committed SQL → `drizzle-kit migrate`. **Expand/contract only**: add nullable columns and backfill before making anything required, so a Worker rollback never meets an incompatible schema (ITA §5).
+- Migrations: `drizzle-kit generate` → committed SQL → `wrangler d1 migrations apply` (`--local` for dev, `--remote` for production). **Expand/contract only**: add nullable columns and backfill before making anything required, so a Worker rollback never meets an incompatible schema (ITA §5).
 - Schema lives in one place: `src/lib/db/schema.ts`. Generate the Better Auth tables with `npx @better-auth/cli generate` and diff — never hand-write auth tables (ITA §11.6).
 - If a feature genuinely needs a read-then-write with a decision in between (not an import), treat it as a race-condition problem first — see §3 — the answer is usually a constraint, not a transaction.
 
@@ -69,14 +67,16 @@ Concrete mechanisms already in the schema — use them, don't duplicate them in 
 
 | Invariant | Enforcement |
 |---|---|
-| No duplicate rows on re-import | `UNIQUE (workspaceId, dedupeHash)`; `dedupe_hash = sha256(workspaceId \| date \| time \| amountMinor \| balanceMinor \| ref)` |
+| No duplicate rows on re-import | `UNIQUE (workspaceId, dedupeHash)`; `dedupe_hash = sha256(workspaceId \| date \| time \| amountMinor \| balanceMinor \| ref)` — computed app-side in exactly one pure function (SQLite/D1 has no `sha256()`) |
 | One row per invite/code | `inviteCode` UNIQUE; membership `UNIQUE (workspaceId, userId)` |
+| One workspace per user | `members` `UNIQUE (userId)`; backstop `workspaces` `UNIQUE (ownerId)` (BRD FR-02) |
+| One owner + max two members per workspace | `members` `UNIQUE (workspaceId, role)` + `CHECK (role IN ('owner','member'))` (BRD FR-02) |
 | One category name per workspace | `UNIQUE (workspaceId, name)` |
 | One entitlement grant per order | Idempotent grant keyed by order id (ITA §6) |
 
 Rules:
 
-- **Two-member cap:** the handler counts members *inside* the same batch/insert flow and the unique constraint absorbs the concurrent duplicate. A third join attempt returns a clear 409-style message, never a silent failure (BRD FR-02). Do not "reserve" a slot with a prior read.
+- **Two-member cap and one workspace per user:** both are DB constraints (`UNIQUE (members.workspaceId, role)` + `UNIQUE (members.userId)` — ITA §5), not handler counts. A third join, a second workspace, or a second membership fails on the index even under concurrency; the handler only maps SQLite's unique-constraint violation (`SQLITE_CONSTRAINT_UNIQUE`, surfaced by D1/Drizzle as `UNIQUE constraint failed: <table>.<column>`) to the clear 409-style message (BRD FR-02) — classification lives in `src/lib/db/index.ts` (P3), never a raw driver-string or SQLSTATE match in the handler. Do not "reserve" a slot with a prior read and do not count members to enforce the cap.
 - **Idempotent imports:** re-posting the same rows is a no-op by `dedupe_hash`, not an error and not a doubled balance. Never delete-and-reinsert to "refresh" a month.
 - **Never trust the client.** The browser computes reconciliation; the server **re-runs the same pure reconciliation function** on the posted rows and stores the server result on the import row (ITA §2). The client's `reconciliation` field is advisory input only.
 - **Entitlement webhooks:** process at-most-once per order id. Retry on 5xx is safe because the grant is keyed by order id.
@@ -108,7 +108,7 @@ Rules:
 ```
 src/core/        pure domain logic: reconcile, forecast, money — ZERO I/O
 src/adapters/    StatementSource implementations (Jago, CSV) — pure, fixture-tested
-src/lib/db/      schema + lazy Neon client
+src/lib/db/      schema + lazy D1 client (single swap point)
 src/lib/session  getSession() / requireSession()
 src/lib/reports/ aggregates — the only place reports touch db
 src/app/**       server components (reads) + route handlers (mutations)
@@ -202,20 +202,20 @@ Loading (skeleton, not spinner-over-blank) · empty (explain what to do next) ·
 - Sessions: `httpOnly`, `Secure` in prod, `SameSite=Lax`; cookie carries the token only.
 - Rate limits: auth 10/min/IP, import 20/hour/workspace.
 - **No document, image, or avatar is ever stored or uploaded** (BRD NFR-01, ADR-08). The upload endpoint does not exist; only normalised rows are posted. Do not add file storage "just in case".
-- Secrets via `wrangler secret put` / `.dev.vars` — both gitignored. Never commit `.dev.vars`, `DATABASE_URL`, or `BETTER_AUTH_SECRET`.
+- Secrets via `wrangler secret put` / `.dev.vars` — both gitignored. Never commit `.dev.vars` or `BETTER_AUTH_SECRET`. The D1 binding is configuration in `wrangler.jsonc`, not a secret.
 
 ---
 
 ## 10. Do NOT build in v1.0 (BRD §3, ITA §1)
 
-No OCR · no LLM anywhere in the request path · no bank API integration · no subscription/recurring billing · no multi-currency · no document/image/avatar storage · no native mobile apps · no guest list/RSVP/invitations · no vendor marketplace · no roles beyond owner/member · no KV/R2/D1/server-side session cache. If a task requires one of these, stop and raise it — scope changes go through the BRD.
+No OCR · no LLM anywhere in the request path · no bank API integration · no subscription/recurring billing · no multi-currency · no document/image/avatar storage · no native mobile apps · no guest list/RSVP/invitations · no vendor marketplace · no roles beyond owner/member · no KV/R2/server-side session cache. If a task requires one of these, stop and raise it — scope changes go through the BRD.
 
 ---
 
 ## 11. Testing
 
 - **New pure logic (`src/core`, adapters) ships with unit tests** — `node:test`, run with no install. Money and reconciliation tests are mandatory: formats, tampered amount, duplicate re-import (ITA §11 test strategy).
-- Integration: import → persist → report against a Neon *branch*, including a duplicate re-import.
+- Integration: import → persist → report against a local D1 database (`wrangler d1` / Miniflare, `--local`), including a duplicate re-import.
 - E2e: one happy path (signup → workspace → invite → import → report) on preview. Add an e2e assertion when a bug escapes unit tests — the test that catches the class of bug, not the instance.
 - UI changes: verify loading, empty, error, and keyboard-only paths manually before claiming done (§6). A11y regressions (missing label, unreachable dialog) are caught in review, not by the current toolchain.
 - A fix without a failing-first test (or an explainable reason why the logic is trivial) is incomplete.

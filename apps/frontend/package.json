@@ -7,26 +7,35 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "test:integration": "node --test \"test/integration/*.test.ts\"",
+    "check:residue": "node scripts/check-residue.mjs",
+    "e2e:server": "wrangler d1 migrations apply DB --local && next dev --port 3100",
+    "e2e:server:workers": "wrangler d1 migrations apply DB --local && opennextjs-cloudflare build && wrangler dev --port 3100 --ip 127.0.0.1",
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@neon/config": "^1.10.0",
-    "@neon/env": "^1.6.8",
-    "@neondatabase/serverless": "1.2.0",
+    "better-auth": "1.7.15",
+    "drizzle-orm": "0.45.4",
     "next": "16.4.3",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.20.15",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "drizzle-kit": "0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "miniflare": "5.20261101.0-beta",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "4.156.1"
   }
 }

@@ -1,26 +1,312 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tokens are docs/ui/DESIGN.md. Change them there first. */
+@theme {
+  --color-primary: #1d4ed8;
+  --color-primary-hover: #1e40af;
+  --color-primary-on-dark: #93c5fd;
+  --color-secondary: #f43f5e;
+  --color-secondary-soft: #fb7185;
+  --color-tertiary: #0b0f14;
+  --color-neutral: #f8fafc;
+  --color-surface: #ffffff;
+  --color-line: #e2e8f0;
+  --color-muted: #475569;
+  --color-muted-soft: #64748b;
+  --color-danger: #b91c1c;
+
+  /* Landing pilot palette (docs/ui/DESIGN.md, Colors note 2026-11-04).
+     Landing, login, and 404 only — the dashboard stays on the tokens above. */
+  --color-emerald: #0d3b2e;
+  --color-emerald-deep: #082a20;
+  --color-emerald-lift: #11483a;
+  --color-emerald-glow: #1c6a50;
+  --color-emerald-soft: #e3ede7;
+  --color-emerald-mist: #e8f1eb;
+  --color-emerald-shade: #c7d9cf;
+  --color-gold: #dfba73;
+  --color-gold-hover: #e8c98a;
+  --color-gold-line: #8e856d;
+  --color-pearl: #f7f9f6;
+  --color-pearl-muted: #c6d5cd;
+  --color-ink: #12211b;
+  --color-ink-muted: #4c5c54;
+
+  /* Landing-only depth: soft, green-tinted, never a hard drop shadow. */
+  --shadow-card: 0 36px 70px -40px rgb(4 20 15 / 0.7);
+  --shadow-lift: 0 16px 30px -18px rgb(4 20 15 / 0.5);
+  --shadow-nav: 0 14px 34px -30px rgb(4 20 15 / 0.55);
+
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.5;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.6;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.015em;
+  --text-h2: clamp(1.75rem, 3.2vw, 2.5rem);
+  --text-h2--line-height: 1.12;
+  --text-h2--letter-spacing: -0.02em;
+  --text-display: clamp(2.5rem, 5.2vw, 4.75rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.03em;
+  --text-figure: clamp(3.5rem, 14vw, 12rem);
+  --text-figure--line-height: 0.9;
+  --text-figure--letter-spacing: -0.04em;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Overridable per surface: emerald on pearl, gold on the emerald bands. */
+    --focus-ring: var(--color-primary);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: var(--color-line) var(--color-surface);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  ::selection {
+    background-color: var(--color-primary);
+    color: #ffffff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring, var(--color-primary));
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-primary);
+  }
+
+  svg {
+    display: block;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Hero backdrop: 1px gold ledger rulings on a 96px column beat, not a colour wash. */
+  .ledger-rules {
+    background-image: linear-gradient(
+      to right,
+      var(--color-gold) 1px,
+      transparent 1px
+    );
+    background-size: 96px 100%;
+  }
+
+  /* One continuous hero field: emerald graded dark-to-deep, no plate inside it. */
+  .hero-field {
+    background-color: var(--color-emerald);
+    background-image: linear-gradient(
+      162deg,
+      var(--color-emerald-lift) 0%,
+      var(--color-emerald) 48%,
+      var(--color-emerald-deep) 100%
+    );
+  }
+
+  /* The only luminous layer: warm gold top-right, green lift top-left. */
+  .hero-aurora {
+    background-image:
+      radial-gradient(
+        42rem 30rem at 84% 8%,
+        color-mix(in srgb, var(--color-gold) 22%, transparent) 0%,
+        transparent 68%
+      ),
+      radial-gradient(
+        38rem 28rem at 4% -6%,
+        color-mix(in srgb, var(--color-emerald-glow) 60%, transparent) 0%,
+        transparent 66%
+      );
+  }
+
+  /* Section panels: light graded emerald, warm corner, gold hairline, soft lift. */
+  .panel-surface {
+    background-color: var(--color-emerald-soft);
+    background-image:
+      radial-gradient(
+        70% 62% at 86% -8%,
+        color-mix(in srgb, var(--color-gold) 22%, transparent) 0%,
+        transparent 60%
+      ),
+      linear-gradient(
+        158deg,
+        var(--color-emerald-mist) 0%,
+        var(--color-emerald-soft) 40%,
+        var(--color-emerald-shade) 100%
+      );
+    border: 1px solid color-mix(in srgb, var(--color-gold) 35%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.55),
+      0 32px 64px -44px rgb(6 28 22 / 0.55);
+  }
+
+  /* Inner data cards: white graded to pearl, seated with a top highlight and soft edge. */
+  .card-sheen {
+    background-color: var(--color-surface);
+    background-image: linear-gradient(
+      180deg,
+      var(--color-surface) 0%,
+      #fafbf7 58%,
+      #f4f7f2 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 16px 32px -26px rgb(6 28 22 / 0.6);
+  }
+
+  /* Cards that lift on hover. Pointer-only so touch does not get stuck lifted. */
+  .lift {
+    transition:
+      transform 280ms var(--ease-out),
+      box-shadow 280ms var(--ease-out),
+      border-color 280ms var(--ease-out);
+  }
+
+  @media (hover: hover) {
+    .lift:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-card);
+    }
+  }
+
+  /* Reveal. The hidden start exists only when script runs and motion is allowed. */
+  @media (prefers-reduced-motion: no-preference) {
+    .js [data-reveal] {
+      opacity: 0;
+      transform: translateY(26px) scale(0.985);
+      transition:
+        opacity 700ms var(--ease-out),
+        transform 780ms var(--ease-out);
+      transition-delay: calc(var(--stagger, 0) * 80ms);
+    }
+
+    .js [data-reveal][data-in] {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Hero entrance: copy rises, the product settles. */
+    .enter {
+      animation: enter-up 760ms var(--ease-expo) both;
+      animation-delay: var(--d, 0ms);
+    }
+
+    .enter-card {
+      animation: enter-settle 900ms var(--ease-expo) both;
+      animation-delay: var(--d, 0ms);
+    }
+
+    .hero-aurora {
+      animation: aurora-drift 26s ease-in-out infinite alternate;
+    }
+
+    /* Ledger rows land one after another, after the card has settled. */
+    .demo-row {
+      animation: row-in 480ms var(--ease-out) both;
+      animation-delay: calc(720ms + var(--row, 0) * 90ms);
+    }
+
+    @keyframes enter-up {
+      from {
+        opacity: 0;
+        transform: translateY(22px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @keyframes enter-settle {
+      from {
+        opacity: 0;
+        transform: translateY(34px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    @keyframes aurora-drift {
+      from {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      to {
+        transform: translate3d(-3%, 2%, 0) scale(1.08);
+      }
+    }
+
+    @keyframes row-in {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    /* Masked line reveal: each authored headline line owns its baseline. */
+    .line-mask {
+      display: block;
+      overflow: clip;
+      padding-block: 0.09em;
+      margin-block: -0.09em;
+    }
+
+    .line-mask > span {
+      display: block;
+      animation: line-rise 780ms var(--ease-expo) both;
+      animation-delay: calc(var(--line, 0) * 90ms);
+    }
+
+    @keyframes line-rise {
+      from {
+        opacity: 0;
+        transform: translateY(105%);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* The pinned stage swaps states; the incoming one only needs a crossfade. */
+    @keyframes state-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .state-in {
+      animation: state-in 320ms var(--ease-out) both;
+    }
+  }
 }

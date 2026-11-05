@@ -398,26 +398,36 @@ Radius scale: `xs 6 · sm 8 · md 12 · lg 16 · xl 24 · full 9999`.
 
 ### The mark
 
-Constructed, not a font glyph: one stroked path with round caps on a 48×48 box.
-Source of truth: `components/mark.tsx`.
+Constructed, not a font glyph: one stroked path on a 48×48 box, weight 7, mitred 45° bends,
+cut by a 4-unit diagonal gap. Source of truth: `components/mark.tsx`.
 
 ```svg
 <svg viewBox="0 0 48 48">
+  <defs>
+    <mask id="gap">
+      <rect width="48" height="48" fill="#fff"/>
+      <rect x="12" y="22" width="24" height="4" transform="rotate(45 24 24)" fill="#000"/>
+    </mask>
+  </defs>
   <rect width="48" height="48" rx="12" fill="#0D3B2E"/>
-  <path d="M36 14 H20 A7 7 0 0 0 20 28 H28 A7 7 0 0 1 28 42 H12"
-        fill="none" stroke="#F7F9F6" stroke-width="6.5"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="37" y="37" width="6" height="6" rx="1.5" fill="#DFBA73"/>
+  <path d="M35 9H18L10.5 16.5L18 24H30L37.5 31.5L30 39H12"
+        fill="none" stroke="#F7F9F6" stroke-width="7"
+        stroke-linecap="butt" stroke-linejoin="miter" mask="url(#gap)"/>
+  <rect x="38" y="38" width="5" height="5" rx="1.25" fill="#DFBA73"/>
 </svg>
 ```
 
 - **Primary:** emerald tile, pearl S, gold seal.
 - **Inverse** (for emerald fields): pearl tile, emerald S, gold seal.
-- The seal is the only place gold touches the mark. It means *stamped, valid,
-  settled* — the "sah" in SahFund.
-- Clear space: half the cap height on all sides. Minimum sizes: icon 16px,
-  lockup 96px wide.
+- The S is two chevron halves: horizontal bars joined by 45° bends, sliced by a diagonal gap that
+  runs top-left to bottom-right. The cut is construction, not decoration — it keeps the S legible
+  at 16px while giving the mark an edge.
+- The seal is the only place gold touches the mark. It means *stamped, valid, settled* — the "sah"
+  in SahFund. Never recolour it, never add a second gold element to the mark.
+- The tile radius is 12 on 48 (25%) — rounder than UI `md`, so the icon reads as an app.
+- Clear space: half the cap height on all sides. Minimum sizes: icon 16px, lockup 96px wide.
 - Wordmark: mark + "SahFund" at `text-h3`, −0.02em; `ink` on pearl, `pearl` on emerald.
+- Assets and a scale test: `apps/frontend/public/brand/` (`preview.html`).
 
 ## Landing anatomy
 

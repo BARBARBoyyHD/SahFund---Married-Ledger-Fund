@@ -18,9 +18,10 @@ const ALLOWLIST = new Map([
   ["docs/projects/SPEC-d1-migration.md", "the change spec itself — it names the tokens it removes"],
   ["docs/projects/ITA.md", "ADR-02 row kept as superseded history (§5.2)"],
   ["docs/projects/PEP.md", "historical risk/task rows quoted as history (§5.4)"],
-  ["docs/projects/ERD.md", "pre-schema notes + the Postgres→SQLite mapping (§6.1)"],
+  ["docs/projects/ERD.md", "Postgres→SQLite type mapping and resolved SQLSTATE history (§1, §7.5)"],
   ["AGENTS.md", "names the banned driver only to forbid it (§1)"],
   ["apps/frontend/package-lock.json", "drizzle-orm's optional peer-dependency metadata"],
+  ["apps/frontend/scripts/check-residue.mjs", "the gate itself names the tokens it bans (BANNED regex + header comment)"],
 ]);
 
 const root = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();

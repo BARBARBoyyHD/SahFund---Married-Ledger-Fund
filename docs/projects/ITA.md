@@ -121,7 +121,7 @@ An adapter is complete when it implements this interface and passes the shared f
 
 ## 5. Data Architecture
 
-Money is stored as 64-bit integer **minor units** (1/100 rupiah) — SQLite `INTEGER` via Drizzle `integer({ mode: 'bigint' })`. Floating point is banned from storage and aggregation.
+Money is stored as 64-bit integer **minor units** (1/100 rupiah) — SQLite `INTEGER` via Drizzle `numeric({ mode: 'bigint' })`. Floating point is banned from storage and aggregation.
 
 | Entity | Store | Key fields | Notes |
 |--------|-------|------------|-------|

@@ -50,7 +50,7 @@ M1–M4 map one-to-one to BRD §7. M5 is the release gate, not a fifth product p
 
 ### M1 — Foundation
 - [ ] Project scaffold: pinned versions from ITA §3, Tailwind v4 tokens, shadcn init — Uwi — ~0.25d
-- [ ] D1 database + wrangler D1 binding + OpenNext config (D1 task c: `wrangler d1 create`, `wrangler.jsonc` `d1_databases` with binding `env.DB`, `initOpenNextCloudflareForDev()` for a local simulated D1) — Uwi — ~0.5d
+- [x] D1 database + wrangler D1 binding + OpenNext config (D1 task c: `wrangler d1 create`, `wrangler.jsonc` `d1_databases` with binding `env.DB`, `initOpenNextCloudflareForDev()` for a local simulated D1) — Uwi — ~0.5d
 - [ ] Drizzle schema (sqlite dialect) + first migration applied with `wrangler d1 migrations apply` — Uwi — ~0.25d
 - [ ] Better Auth wiring, login/signup pages, `requireSession()` guard — Uwi — ~0.5d
 - [ ] Workspace create + pocket code (10-char) + invite email via Resend + join flow (max two members) — Uwi — ~0.35d
@@ -58,11 +58,15 @@ M1–M4 map one-to-one to BRD §7. M5 is the release gate, not a fifth product p
 - [ ] CI: typecheck, unit tests, schema drift check — agent — ~0.25d
 
 **D1 follow-up (ADR-13) — code and doc tasks for the specialist after this plan is signed off** (binding setup is D1 task c, the first M1 row above; implementation detail in `SPEC-d1-migration.md`):
-- [ ] Swap the DB client to D1 (D1 task a): `src/lib/db/index.ts` → lazy client over `drizzle-orm/d1` + the `env.DB` binding, keeping `probeDb()`'s 3 s bound and the health route unchanged — agent — ~0.25d
-- [ ] Remove/evaluate Neon dependencies (D1 task b): drop `@neondatabase/serverless` (plus `@neon/config`, `@neon/env`, `apps/frontend/neon.ts`, `.neon/`), rewrite `.env.example` (no connection-string vars), prune the lockfile — agent — ~0.1d
-- [ ] Sync `AGENTS.md` to D1 (D1 task d): §1 stack + Neon-skills block + portability rules P1–P8, §2 hard constraint and migrations line, §3 constraint-error wording (`SQLSTATE 23505` → `SQLITE_CONSTRAINT_UNIQUE`), §10 D1 exclusion lifted, §11 integration target; also index `SPEC-d1-migration.md` in `docs/README.md` — agent — ~0.25d
-- [ ] Sync ERD.md from ITA §5 (D1 task e) — currently stale, still describes Postgres/Neon — agent — ~0.15d
+- [x] Swap the DB client to D1 (D1 task a): `src/lib/db/index.ts` → lazy client over `drizzle-orm/d1` + the `env.DB` binding, keeping `probeDb()`'s 3 s bound and the health route unchanged — agent — ~0.25d
+- [x] Remove/evaluate Neon dependencies (D1 task b): drop `@neondatabase/serverless` (plus `@neon/config`, `@neon/env`, `apps/frontend/neon.ts`, `.neon/`), rewrite `.env.example` (no connection-string vars), prune the lockfile — agent — ~0.1d
+- [x] Sync `AGENTS.md` to D1 (D1 task d): §1 stack + Neon-skills block + portability rules P1–P8, §2 hard constraint and migrations line, §3 constraint-error wording (`SQLSTATE 23505` → `SQLITE_CONSTRAINT_UNIQUE`), §10 D1 exclusion lifted, §11 integration target; also index `SPEC-d1-migration.md` in `docs/README.md` — agent — ~0.25d
+- [x] Sync ERD.md from ITA §5 (D1 task e) — status note, type/money conventions, constraint-error wording and the open SQLSTATE question now match the as-built SQLite/D1 schema — agent — ~0.15d
 - [ ] Evaluate the Neon skills in the repo (D1 task f): `skills-lock.json`, `.agents/skills` — keep only what still applies (expected: none for DB work) — agent — ~0.05d
+
+> **As-built notes from the T8 doc sweep (where reality differed from the task text):**
+> - **Money columns are `numeric({ mode: 'bigint' })`, not `integer({ mode: 'bigint' })`** — Drizzle's SQLite `integer()` has no bigint mode (0.45.4); `numeric` has NUMERIC affinity and reads back as a JS `bigint`. `AGENTS.md` §1 P5 and `ITA §5` now state the working form.
+> - **Task f is incomplete:** the nine `.agents/skills/neon-*` packages (SKILL.md + references) are still on disk. Both `.agents/` and `skills-lock.json` are gitignored machine-local tooling; the neon-* lock entries were removed in this pass, but the directories still need deleting (and must not be restored from a global install for DB work).
 
 ### M2 — Import
 - [ ] Port proven core (money, adapters, reconciliation) into the app — Uwi — ~0.25d

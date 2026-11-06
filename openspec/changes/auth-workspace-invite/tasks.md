@@ -37,5 +37,5 @@
 ## 5. Verification & gates — all specialists
 
 - [x] 5.1 Full-flow Playwright e2e on local D1: signup → create workspace → second account joins by code → rotate → set date/budget → sign out → `/dashboard` redirects; plus a non-member URL-id denial (AC: US-01–US-08 happy paths; PEP M1 acceptance "two accounts join one workspace").
-- [ ] 5.2 Manual pass on every new screen: loading / empty / error+retry / success states, keyboard-only path, focus visibility, labels + `aria-live` errors, Bahasa Indonesia copy, money/dates only via `src/core/money.ts` (AC: AGENTS §6/§11, NFR-08/NFR-09 framing in the stories).
+- [x] 5.2 Manual pass on every new screen: loading / empty / error+retry / success states, keyboard-only path, focus visibility, labels + `aria-live` errors, Bahasa Indonesia copy, money/dates only via `src/core/money.ts` (AC: AGENTS §6/§11, NFR-08/NFR-09 framing in the stories).
 - [x] 5.3 CI gates green and log hygiene audit: typecheck, `node --test` unit suite, integration suite, schema-drift check; grep confirms no log line carries row contents, amounts, pocket codes, or recipient emails (AC: AGENTS §8/§11, ITA §11.9).

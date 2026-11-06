@@ -17,6 +17,23 @@ type ResponseBody = {
 };
 
 /**
+ * Schema keys → the ids the inputs actually render. The two differ on purpose (Bahasa
+ * ids), and looking up the schema key would miss — or hit the kept-alive create-form
+ * input of the same name — leaving focus on the submit button (AGENTS §6).
+ */
+const FIELD_ID: Record<keyof UpdateWorkspaceDetailsFormValues, string> = {
+  weddingDate: "tanggal-pernikahan",
+  budgetTarget: "target-anggaran",
+};
+
+function focusFirstInvalid(errors: FieldErrors<UpdateWorkspaceDetailsFormValues>) {
+  const first = (Object.keys(FIELD_ID) as (keyof typeof FIELD_ID)[]).find(
+    (field) => errors[field],
+  );
+  if (first) document.getElementById(FIELD_ID[first])?.focus();
+}
+
+/**
  * US-08: any member sets or changes the wedding date and the budget target. Validates
  * with the shared schema, posts the raw values (rupiah text; `""` clears), and asks the
  * server component to re-read the row afterwards — no hand-rolled client cache.
@@ -57,8 +74,7 @@ export function DetailsForm({
     if (!parsed.success) {
       const next = fieldErrors<UpdateWorkspaceDetailsFormValues>(parsed.error);
       setErrors(next);
-      const first = (["weddingDate", "budgetTarget"] as const).find((field) => next[field]);
-      if (first) document.getElementById(first)?.focus();
+      focusFirstInvalid(next);
       return;
     }
 
@@ -80,6 +96,8 @@ export function DetailsForm({
         const next = body?.fieldErrors ?? {};
         setErrors(next);
         setError(typeof body?.message === "string" ? body.message : "Permintaan gagal. Coba lagi.");
+        // A 422 marks the same fields the client check does; move focus there too.
+        focusFirstInvalid(next);
         return;
       }
 

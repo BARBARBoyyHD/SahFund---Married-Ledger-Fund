@@ -3,23 +3,25 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
 // Portability rules P1–P3 (SPEC-d1-migration §3.2): every dialect decision lives
-// in schema.ts + db/index.ts, so the two files that may import these are
-// re-allowed below.
-const PORTABILITY_IMPORTS = [
-  {
-    name: "drizzle-orm/d1",
-    message: "P3: only src/lib/db/index.ts imports the driver — it is the single swap point.",
-  },
-  {
-    name: "drizzle-orm/sqlite-core",
-    message: "P2: dialect types live only in src/lib/db/schema.ts.",
-  },
-  {
-    name: "drizzle-orm",
-    importNames: ["sql"],
-    message: "P1: raw SQL is banned outside schema.ts constraints and probeDb's `select 1`.",
-  },
-];
+// in schema.ts + db/index.ts. Ban the whole driver/dialect surface by group, then
+// re-allow the query builder at the root and the two sanctioned subpaths in the
+// two-file override below — a new `drizzle-orm/*` import fails here by default.
+const PORTABILITY_IMPORTS = {
+  paths: [
+    {
+      name: "drizzle-orm",
+      importNames: ["sql"],
+      message: "P1: raw SQL is banned outside schema.ts constraints and probeDb's `select 1`.",
+    },
+  ],
+  patterns: [
+    {
+      group: ["drizzle-orm/*"],
+      message:
+        "P2/P3: driver and dialect subpaths are confined to src/lib/db/schema.ts and src/lib/db/index.ts.",
+    },
+  ],
+};
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -39,7 +41,7 @@ const eslintConfig = defineConfig([
   ]),
   {
     files: ["src/**/*.{ts,tsx}"],
-    rules: { "no-restricted-imports": ["error", { paths: PORTABILITY_IMPORTS }] },
+    rules: { "no-restricted-imports": ["error", PORTABILITY_IMPORTS] },
   },
   {
     // P1/P2/P3 allowlist: the only two files that legitimately hold dialect knowledge.

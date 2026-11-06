@@ -37,6 +37,22 @@ test("parseRupiahInput accepts how people type rupiah and refuses fractions", ()
   assert.equal(parseRupiahInput("99999999999999999999"), null);
 });
 
+test("money past 2^53 minor units is refused, not silently rounded (SPEC E4)", () => {
+  const maxRupiah = Math.floor(Number.MAX_SAFE_INTEGER / 100);
+
+  // 2^53-1 rupiah is a safe rupiah but its minor product is not an exact integer.
+  assert.equal(parseRupiahInput("9007199254740991"), null);
+  assert.throws(() => rupiahToMinor(Number.MAX_SAFE_INTEGER), RangeError);
+
+  // The boundary is still accepted, and its minor product is the largest exact one.
+  assert.equal(parseRupiahInput(String(maxRupiah)), maxRupiah);
+  assert.equal(rupiahToMinor(maxRupiah), maxRupiah * 100);
+  assert.equal(rupiahToMinor(-maxRupiah), -maxRupiah * 100);
+
+  assert.throws(() => rupiahToMinor(maxRupiah + 1), RangeError);
+  assert.throws(() => rupiahToMinor(-maxRupiah - 1), RangeError);
+});
+
 test("monthsUntil counts whole months and never returns zero", () => {
   assert.equal(monthsUntil(day("2027-06-01"), day("2026-11-03")), 6);
   assert.equal(monthsUntil(day("2027-06-01"), day("2026-12-03")), 5);

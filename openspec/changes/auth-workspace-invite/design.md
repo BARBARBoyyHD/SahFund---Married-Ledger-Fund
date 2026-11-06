@@ -79,6 +79,32 @@ POST `https://api.resend.com/emails` with `Authorization: Bearer $RESEND_API_KEY
 
 No schema change: migrations 0000–0003 are applied locally and `rate_limits` already matches this design, so there is nothing to expand or contract. Deploy is an ordinary Workers/OpenNext release; rollback is a redeploy of the previous version (old code never touches `rate_limits`, new code needs no migration the old build would break). `RESEND_API_KEY` (+ sender address) is added later via `wrangler secret put` / `.dev.vars`; its absence must not fail deploy or build — the fallback path (D9) is the tested default. Rate-limit rows are ephemeral and swept on write; no backfill, no cron.
 
+## Verification adjudications (5.3)
+
+Recorded during the task-5.3 log-hygiene audit; both items are accepted as-is, with no
+application change.
+
+**A1 — The pocket code appears in the join URL, so platform request logs see it.**
+`GET /join?code=<code>` is logged as a request line by the runtime (observed: 27 such
+lines in one e2e run; our own log lines carry none). This is inherent to US-53: the invite
+email must contain a clickable link, and BRD FR-13 forbids a separate invite record, so the
+code travels in the URL by design (D8) and a POST-body-only join cannot replace an emailed
+link. Verdict: **accepted residual risk, not a defect** — the code is a rotatable (US-07),
+single-slot credential that grants no financial data, and request logs are access-controlled
+operational data. Mitigations already in place: the code is never emitted by our code, and
+the default `strict-origin-when-cross-origin` referrer policy keeps it out of third-party
+`Referer` headers. Optional future hardening if the org wants it: a `Referrer-Policy:
+no-referrer` header on `/join`, and a short retention on platform request logs. Never
+"solved" by moving the code out of the link.
+
+**A2 — The log-hygiene e2e stays opt-in behind `E2E_SERVER_LOG`.**
+`e2e/invite-email.spec.ts` skips without `E2E_SERVER_LOG` because Playwright's own
+`webServer` does not expose the dev server's stdout. It passes when pointed at a captured
+log (verified in the 5.3 run, including its positive control). Wiring it into CI means
+starting the server explicitly with its output redirected to a file and exporting that path.
+Gotcha: on Windows PowerShell `*>` writes UTF-16, which makes the positive control fail
+(loudly, not silently) — use `cmd /c "npm run e2e:server > log 2>&1"` for a UTF-8 log.
+
 ## Open Questions
 
 1. **Auth endpoint of record:** keep the as-built `POST /api/auth` single boundary (D1) or mount ITA §4.1's `api/auth/[...all]`? Needs an ITA/BRD reconciliation note — not edited by this change.

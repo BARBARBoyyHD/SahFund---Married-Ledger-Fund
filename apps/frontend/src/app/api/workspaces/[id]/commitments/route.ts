@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { createCommitment } from "@/lib/commitments/service";
-import { createCommitmentSchema } from "@/lib/commitments/schema";
+import { createCommitment } from "@/lib/commitments/add-commitment";
+import { createCommitmentSchema } from "@/lib/commitments/commitment-schema";
 import { getDb } from "@/lib/db";
 import { invalid, logFailure, unavailable } from "@/lib/http";
 import { membershipForApi } from "@/lib/membership";

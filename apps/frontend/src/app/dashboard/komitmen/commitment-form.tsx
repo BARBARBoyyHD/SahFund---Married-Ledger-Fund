@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { Field, FormMessage, describedBy, inputClass } from "@/components/app/form";
 import { BUTTON_PRIMARY } from "@/components/landing/ui";
-import { createCommitmentSchema, type CreateCommitmentFormValues } from "@/lib/commitments/schema";
+import { createCommitmentSchema, type CreateCommitmentFormValues } from "@/lib/commitments/commitment-schema";
 import { fieldErrors, type FieldErrors } from "@/lib/validation";
 
 type ResponseBody = {

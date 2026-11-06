@@ -5,7 +5,7 @@ import { INVITE_LIMIT, allowAttempt } from "../auth/rate-limit.ts";
 import { classifyError, type Db } from "../db/index.ts";
 import { categories, members, workspaces } from "../db/schema.ts";
 import { sendInviteEmail, type MailConfig } from "../mail.ts";
-import { seedCategoryRows } from "./categories.ts";
+import { seedCategoryRows } from "./wedding-category-seed.ts";
 import type { CreateWorkspaceData, UpdateWorkspaceDetailsData } from "./schema.ts";
 
 /**

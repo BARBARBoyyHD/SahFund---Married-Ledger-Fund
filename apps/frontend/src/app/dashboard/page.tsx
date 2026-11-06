@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageSkeleton } from "@/components/app/skeleton";
-import { DashboardContent } from "./dashboard";
+import { DashboardContent } from "./dashboard-content";
 
 export const metadata: Metadata = { title: "Dashboard" };
 

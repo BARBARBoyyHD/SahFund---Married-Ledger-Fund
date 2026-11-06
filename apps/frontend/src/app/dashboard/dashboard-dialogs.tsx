@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { DIALOG_CLASS, DialogHeading } from "@/components/app/dialog";
 import { BUTTON_SMALL } from "@/components/app/ui";
 import { DetailsForm } from "./details-form";
-import { Icon } from "./icons";
+import { Icon } from "./dashboard-icons";
 import { InvitePanel } from "./invite-panel";
 import { ManualTransactionForm } from "./manual-transaction-form";
 

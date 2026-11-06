@@ -27,8 +27,8 @@ import {
   user,
 } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
-import { readWorkspace } from "@/lib/workspace/context";
-import { DashboardActions } from "./dashboard-actions";
+import { readWorkspace } from "@/lib/workspace/workspace-access";
+import { DashboardActions } from "./dashboard-dialogs";
 import { DashboardMobileNav, DashboardSidebar } from "./dashboard-nav";
 
 /**

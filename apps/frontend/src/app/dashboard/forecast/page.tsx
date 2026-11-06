@@ -10,7 +10,7 @@ import { jakartaDay, monthBounds, toMinor } from "@/core/dashboard";
 import { formatDate } from "@/core/money";
 import { getDb } from "@/lib/db";
 import { commitments, members, transactions, user } from "@/lib/db/schema";
-import { requireWorkspace } from "@/lib/workspace/context";
+import { requireWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardShell } from "../dashboard-nav";
 import { ForecastSimulator } from "./forecast-simulator";
 

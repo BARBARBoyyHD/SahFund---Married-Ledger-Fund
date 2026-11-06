@@ -6,7 +6,7 @@ import { invalid, logFailure, unavailable } from "@/lib/http";
 import { membershipForApi } from "@/lib/membership";
 import { WORKSPACE_MESSAGE } from "@/lib/workspace/messages";
 import { inviteSchema } from "@/lib/workspace/schema";
-import { sendInvite } from "@/lib/workspace/service";
+import { sendInvite } from "@/lib/workspace/workspace-mutations";
 
 /**
  * Send the pocket invite (US-52) — owner only. The NFR-02 budget is spent before the

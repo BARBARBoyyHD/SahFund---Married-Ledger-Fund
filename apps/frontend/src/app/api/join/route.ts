@@ -5,7 +5,7 @@ import { invalid, logFailure, unavailable, unauthenticated } from "@/lib/http";
 import { getSession } from "@/lib/session";
 import { WORKSPACE_MESSAGE } from "@/lib/workspace/messages";
 import { joinWorkspaceSchema } from "@/lib/workspace/schema";
-import { joinWorkspace } from "@/lib/workspace/service";
+import { joinWorkspace } from "@/lib/workspace/workspace-mutations";
 
 /**
  * Join by pocket code. The format is rejected here, before any lookup or write (US-06);

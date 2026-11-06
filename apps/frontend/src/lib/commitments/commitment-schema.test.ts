@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createCommitmentSchema } from "./schema.ts";
+import { createCommitmentSchema } from "./commitment-schema.ts";
 
 /**
  * US-28 / BRD FR-09: the form and the handler share this schema. Money is stored as

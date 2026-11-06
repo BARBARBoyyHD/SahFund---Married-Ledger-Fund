@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 
 import type { Db } from "../db/index.ts";
 import { categories, commitments } from "../db/schema.ts";
-import type { CreateCommitmentData } from "./schema.ts";
+import type { CreateCommitmentData } from "./commitment-schema.ts";
 
 export type CreateCommitmentResult =
   | { ok: true; id: string }

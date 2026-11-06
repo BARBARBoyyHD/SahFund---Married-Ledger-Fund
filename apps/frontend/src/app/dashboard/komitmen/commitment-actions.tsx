@@ -5,7 +5,7 @@ import { useRef } from "react";
 import { DIALOG_CLASS, DialogHeading } from "@/components/app/dialog";
 import { BUTTON_SMALL } from "@/components/app/ui";
 import { CommitmentForm } from "./commitment-form";
-import { Icon } from "../icons";
+import { Icon } from "../dashboard-icons";
 
 /** US-28: the add trigger and its native `<dialog>` (focus trap + focus return built in). */
 export function CommitmentActions({

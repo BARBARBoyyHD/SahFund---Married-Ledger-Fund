@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { invalid, logFailure, unavailable } from "@/lib/http";
 import { membershipForApi } from "@/lib/membership";
 import { updateWorkspaceDetailsSchema } from "@/lib/workspace/schema";
-import { updateWorkspaceDetails } from "@/lib/workspace/service";
+import { updateWorkspaceDetails } from "@/lib/workspace/workspace-mutations";
 
 /**
  * Any member may set or change the wedding date and the budget target (US-08). Only the

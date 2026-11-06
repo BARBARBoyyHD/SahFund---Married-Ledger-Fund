@@ -8,7 +8,7 @@ import { percent, toMinor } from "@/core/dashboard";
 import { formatDate, formatRupiah } from "@/core/money";
 import { getDb } from "@/lib/db";
 import { categories, commitments, members, user } from "@/lib/db/schema";
-import { requireWorkspace } from "@/lib/workspace/context";
+import { requireWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardShell } from "../dashboard-nav";
 import { CommitmentActions } from "./commitment-actions";
 

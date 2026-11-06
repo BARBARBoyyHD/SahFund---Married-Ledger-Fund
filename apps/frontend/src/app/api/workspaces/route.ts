@@ -5,7 +5,7 @@ import { invalid, logFailure, unavailable, unauthenticated } from "@/lib/http";
 import { getSession } from "@/lib/session";
 import { WORKSPACE_MESSAGE } from "@/lib/workspace/messages";
 import { createWorkspaceSchema } from "@/lib/workspace/schema";
-import { createWorkspace } from "@/lib/workspace/service";
+import { createWorkspace } from "@/lib/workspace/workspace-mutations";
 
 /**
  * Create the workspace and its owner membership in one batch. The "one workspace per

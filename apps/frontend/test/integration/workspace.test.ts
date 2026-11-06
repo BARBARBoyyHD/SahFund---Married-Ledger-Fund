@@ -10,7 +10,7 @@ import {
   joinWorkspace,
   rotateInviteCode,
   updateWorkspaceDetails,
-} from "../../src/lib/workspace/service.ts";
+} from "../../src/lib/workspace/workspace-mutations.ts";
 
 /**
  * The workspace writes against real SQLite (US-05–US-08). Every refusal below comes from

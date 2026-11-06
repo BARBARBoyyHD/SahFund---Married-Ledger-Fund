@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { daysUntil, jakartaDay } from "@/core/dashboard";
 import { Wordmark } from "@/components/mark";
-import { Icon } from "./icons";
+import { Icon } from "./dashboard-icons";
 
 /**
  * The dashboard chrome shared by `/dashboard` and its subpages. One nav list, so the

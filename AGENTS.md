@@ -30,7 +30,7 @@ Pin exact versions in `package.json` (ITA §3). Never add a dependency for what 
 **Cloudflare D1 — source of truth.** D1 behaviour and limits: `https://developers.cloudflare.com/d1/llms.txt` (append `.md` to any page to fetch it as Markdown). Prefer current docs over training data.
 
 **Portability rules (P1–P8) — the dialect lives in two files, nothing else.** These are what keep a future database swap at three steps:
-- **P1** All DB access goes through Drizzle's query builder, **no raw SQL** — two allowlists: constraint/default expressions inside `schema.ts`, and the `select 1` fragment inside `probeDb()` (`src/lib/db/index.ts`).
+- **P1** All DB access goes through Drizzle's query builder, **no raw SQL** — three allowlists: constraint/default expressions inside `schema.ts`, the `count = count + 1` counter fragment exported from `schema.ts` (`rateLimitIncrement`, design D4), and the `select 1` fragment inside `probeDb()` (`src/lib/db/index.ts`).
 - **P2** Dialect types live only in `src/lib/db/schema.ts`. No `drizzle-orm/sqlite-core` import anywhere else.
 - **P3** `src/lib/db/index.ts` is the only module that imports the driver (`drizzle-orm/d1`) and the only one that classifies driver errors (e.g. a unique-constraint violation) — every other module sees plain results and typed errors.
 - **P4** `src/core/*` stays pure — no `fetch`, no `db`, no `process.env`, no implicit `Date.now`.

@@ -6,53 +6,132 @@
 <title>SahFund — Dana pernikahan Ayu &amp; Budi</title>
 <link href="https://fonts.googleapis.com" rel="preconnect" />
 <link crossorigin href="https://fonts.gstatic.com" rel="preconnect" />
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
 <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
 <script id="tailwind-config">
   tailwind.config = {
     theme: {
       extend: {
         colors: {
-          brand: 'var(--brand)',
-          'brand-deep': 'var(--brand-deep)',
-          'brand-on-dark': 'var(--brand-on-dark)',
-          rose: 'var(--rose)',
-          ink: { DEFAULT: 'var(--ink)', muted: 'var(--ink-muted)', faint: 'var(--ink-faint)' },
-          obsidian: { DEFAULT: 'var(--obsidian)', raise: 'var(--obsidian-raise)' },
-          canvas: 'var(--canvas)',
+          emerald: {
+            DEFAULT: 'var(--emerald)',
+            deep: 'var(--emerald-deep)',
+            lift: 'var(--emerald-lift)',
+            glow: 'var(--emerald-glow)',
+            soft: 'var(--emerald-soft)',
+            mist: 'var(--emerald-mist)',
+            shade: 'var(--emerald-shade)'
+          },
+          gold: { DEFAULT: 'var(--gold)', hover: 'var(--gold-hover)', line: 'var(--gold-line)' },
+          pearl: { DEFAULT: 'var(--pearl)', muted: 'var(--pearl-muted)' },
+          ink: { DEFAULT: 'var(--ink)', muted: 'var(--ink-muted)' },
           surface: 'var(--surface)',
-          line: 'var(--line)',
           rule: 'var(--rule)',
-          control: 'var(--control)',
           danger: 'var(--danger)'
         },
-        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] }
+        fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] },
+        borderRadius: { sm: '8px', md: '12px' },
+        boxShadow: { card: 'var(--shadow-card)', lift: 'var(--shadow-lift)', nav: 'var(--shadow-nav)' }
       }
     }
   }
 </script>
 <style>
-  /* SahFund tokens. Palette and type are pinned by docs/ui/DESIGN.md. */
+  /* SahFund tokens. Palette, gradients and type are pinned by docs/ui/DESIGN.md. */
   :root {
-    --brand:#1D4ED8; /* taste-skill-ignore brand cobalt, fixed by docs/ui/DESIGN.md */
-    --brand-deep:#1E40AF;
-    --brand-on-dark:#93C5FD;
-    --rose:#F43F5E;
-    --ink:#0B0F14;
-    --ink-muted:#475569;
-    --ink-faint:#64748B;
-    --obsidian:#0B0F14;
-    --obsidian-raise:#1A2029;
-    --canvas:#F8FAFC;
-    --surface:#FFFFFF;
-    --line:#E2E8F0;
-    --rule:#F1F5F9;
-    --control:#CBD5E1;
-    --danger:#B91C1C;
+    --emerald: #0D3B2E;
+    --emerald-deep: #082A20;
+    --emerald-lift: #11483A;
+    --emerald-glow: #1C6A50;
+    --emerald-soft: #E3EDE7;
+    --emerald-mist: #E8F1EB;
+    --emerald-shade: #C7D9CF;
+    --gold: #DFBA73;
+    --gold-hover: #E8C98A;
+    --gold-line: #8E856D;
+    --pearl: #F7F9F6;
+    --pearl-muted: #C6D5CD;
+    --ink: #12211B;
+    --ink-muted: #4C5C54;
+    --surface: #FFFFFF;
+    --danger: #B91C1C;
+    /* Structural hairline: ink at low alpha, so no legacy neutral hue survives. */
+    --rule: rgb(18 33 27 / 0.10);
+    --focus-ring: var(--emerald);
+    --shadow-card: 0 36px 70px -40px rgb(4 20 15 / 0.70);
+    --shadow-lift: 0 16px 30px -18px rgb(4 20 15 / 0.50);
+    --shadow-nav: 0 14px 34px -30px rgb(4 20 15 / 0.55);
   }
-  body { background-color: var(--canvas); color: var(--ink); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-  :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
-  .on-dark :focus-visible { outline-color: var(--brand-on-dark); }
+
+  body { background-color: var(--pearl); color: var(--ink); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+  /* Focus rings: emerald on pearl, gold on the emerald band. Never removed. */
+  :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+  .on-dark { --focus-ring: var(--gold); }
+
+  /* Graded surfaces — one background per surface (DESIGN.md "Gradients"). */
+  .hero-field {
+    background-color: var(--emerald);
+    background-image: linear-gradient(162deg,
+      var(--emerald-lift) 0%,
+      var(--emerald) 48%,
+      var(--emerald-deep) 100%);
+  }
+  .panel-surface {
+    background-color: var(--emerald-soft);
+    background-image:
+      radial-gradient(70% 62% at 86% -8%,
+        color-mix(in srgb, var(--gold) 22%, transparent) 0%, transparent 60%),
+      linear-gradient(158deg,
+        var(--emerald-mist) 0%,
+        var(--emerald-soft) 40%,
+        var(--emerald-shade) 100%);
+    border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.55),
+      0 32px 64px -44px rgb(6 28 22 / 0.55);
+  }
+  .card-sheen {
+    background-color: var(--surface);
+    background-image: linear-gradient(180deg,
+      var(--surface) 0%, #FAFBF7 58%, #F4F7F2 100%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.9),
+      0 16px 32px -26px rgb(6 28 22 / 0.6);
+  }
+
+  /* 1px gold hairlines: 35% over light surfaces, 30% over the emerald field. */
+  .seam { border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+  .seam-dark { border-color: color-mix(in srgb, var(--gold) 30%, transparent); }
+
+  /* Type scale (DESIGN.md "Typography"). */
+  .t-headline { font-size: clamp(1.75rem, 3.2vw, 2.5rem); font-weight: 700; line-height: 1.12; letter-spacing: -0.02em; }
+  .t-h3 { font-size: 20px; font-weight: 700; line-height: 1.3; letter-spacing: -0.015em; }
+  .t-total { font-size: clamp(2.25rem, 5vw, 3.5rem); font-weight: 800; line-height: 0.95; letter-spacing: -0.04em; }
+  .t-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  /* Micro-interactions: buttons lift, links grow a gold hairline from the left. */
+  .btn { transition: transform 200ms ease, box-shadow 200ms ease, background-color 200ms ease, color 200ms ease, border-color 200ms ease; }
+  @media (hover: hover) {
+    .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+  }
+  .btn:active { transform: translateY(0); box-shadow: none; }
+
+  .u-link, .nav-link { position: relative; }
+  .u-link::after, .nav-link::after {
+    content: ""; position: absolute; height: 1px; background: var(--gold);
+    transform: scaleX(0); transform-origin: left; transition: transform 200ms ease;
+  }
+  .u-link::after { left: 0; right: 0; bottom: -3px; }
+  .nav-link::after { left: 0.75rem; right: 0.75rem; bottom: 0.4rem; }
+  .u-link:hover::after, .u-link:focus-visible::after,
+  .nav-link:hover::after, .nav-link:focus-visible::after { transform: scaleX(1); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn, .u-link::after, .nav-link::after { transition: none; }
+    .btn:hover { transform: none; }
+  }
+
   /* Phone shell: the canvas scrolls above the bottom bar, so no content ever
      scrolls underneath it. From 1024px up the document itself scrolls. */
   @media (max-width: 1023.98px) {
@@ -62,7 +141,7 @@
   }
 </style>
 </head>
-<body class="min-h-screen text-sm lg:flex">
+<body class="min-h-screen lg:flex">
 
 <svg class="hidden" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg"><defs>
   <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></symbol>
@@ -78,33 +157,44 @@
   <symbol id="i-file-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-5"/><path d="M9.5 15.5L12 13l2.5 2.5"/></symbol>
 </defs></svg>
 
-<a class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold" href="#konten">Lewati ke konten</a>
+<a class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-surface focus:px-4 focus:py-2 focus:text-sm focus:font-semibold" href="#konten">Lewati ke konten</a>
 
 <!-- ============================================================== -->
-<!-- 1. SIDEBAR — product, scope, navigation. Ink chrome only.       -->
+<!-- 1. SIDEBAR — product, scope, navigation. Pearl ground, gold     -->
+<!--    seam, emerald active state. No dark chrome here.             -->
 <!-- ============================================================== -->
-<aside class="hidden w-60 shrink-0 flex-col justify-between border-r border-line bg-surface px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-screen">
+<aside class="seam hidden w-60 shrink-0 flex-col justify-between border-r bg-pearl px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-screen">
 
   <div class="flex flex-col gap-6">
     <a class="flex items-center gap-2.5 px-2" href="#overview">
+      <!-- The mark: emerald tile, constructed S cut by the 4-unit diagonal
+           gap, gold seal. Source of truth: DESIGN.md "The mark". -->
       <svg aria-hidden="true" class="h-8 w-8 shrink-0" viewBox="0 0 48 48">
-        <rect width="48" height="48" rx="12" fill="var(--brand)" />
-        <path d="M36 14 H20 A7 7 0 0 0 20 28 H28 A7 7 0 0 1 28 42 H12" fill="none" stroke="#FFFFFF" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round" />
-        <rect x="37" y="37" width="6" height="6" rx="1.5" fill="var(--rose)" />
+        <defs>
+          <mask id="gap">
+            <rect width="48" height="48" fill="#fff"/>
+            <rect x="12" y="22" width="24" height="4" transform="rotate(45 24 24)" fill="#000"/>
+          </mask>
+        </defs>
+        <rect width="48" height="48" rx="12" fill="#0D3B2E"/>
+        <path d="M35 9H18L10.5 16.5L18 24H30L37.5 31.5L30 39H12"
+              fill="none" stroke="#F7F9F6" stroke-width="7"
+              stroke-linecap="butt" stroke-linejoin="miter" mask="url(#gap)"/>
+        <rect x="38" y="38" width="5" height="5" rx="1.25" fill="#DFBA73"/>
       </svg>
-      <span class="text-base font-bold tracking-tight">SahFund</span>
+      <span class="text-[20px] font-bold leading-none tracking-[-0.02em]">SahFund</span>
     </a>
 
-    <div class="rounded-lg bg-canvas p-3">
+    <div class="card-sheen seam rounded-sm border p-3">
       <div class="flex items-center gap-2.5">
         <span aria-hidden="true" class="relative flex shrink-0 -space-x-1.5">
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-rose text-xs font-bold text-ink ring-2 ring-canvas">A</span>
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-xs font-bold text-white ring-2 ring-canvas">B</span>
+          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-emerald text-xs font-bold text-pearl ring-2 ring-surface">A</span>
+          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gold text-xs font-bold text-emerald ring-2 ring-surface">B</span>
         </span>
         <span class="min-w-0">
           <span class="block truncate text-sm font-semibold">Ayu &amp; Budi</span>
-          <span class="flex items-center gap-1.5 text-xs text-ink-muted">
-            <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose"></span>
+          <span class="flex items-center gap-1.5 text-sm text-ink-muted">
+            <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-gold"></span>
             142 hari menuju akad
           </span>
         </span>
@@ -112,33 +202,33 @@
     </div>
 
     <nav aria-label="Menu utama" class="text-sm">
-      <ul class="flex flex-col">
+      <ul class="flex flex-col gap-0.5">
         <li>
-          <a aria-current="page" class="flex h-9 items-center gap-2.5 rounded-lg bg-canvas px-3 font-semibold text-ink" href="#overview">
+          <a aria-current="page" class="flex h-9 items-center gap-2.5 rounded-sm bg-emerald px-3 font-semibold text-pearl" href="#overview">
             <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-grid" /></svg>
             Overview
           </a>
         </li>
         <li>
-          <a class="flex h-9 items-center gap-2.5 rounded-lg px-3 text-ink-muted hover:bg-canvas hover:text-ink" href="#transaksi">
+          <a class="nav-link flex h-9 items-center gap-2.5 rounded-sm px-3 text-ink-muted hover:text-emerald" href="#transaksi">
             <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-ledger" /></svg>
             Transaksi
           </a>
         </li>
         <li>
-          <a class="flex h-9 items-center gap-2.5 rounded-lg px-3 text-ink-muted hover:bg-canvas hover:text-ink" href="#anggaran">
+          <a class="nav-link flex h-9 items-center gap-2.5 rounded-sm px-3 text-ink-muted hover:text-emerald" href="#anggaran">
             <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-wallet" /></svg>
             Anggaran
           </a>
         </li>
         <li>
-          <a class="flex h-9 items-center gap-2.5 rounded-lg px-3 text-ink-muted hover:bg-canvas hover:text-ink" href="#komitmen">
+          <a class="nav-link flex h-9 items-center gap-2.5 rounded-sm px-3 text-ink-muted hover:text-emerald" href="#komitmen">
             <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-calendar" /></svg>
             Komitmen
           </a>
         </li>
         <li>
-          <a class="flex h-9 items-center gap-2.5 rounded-lg px-3 text-ink-muted hover:bg-canvas hover:text-ink" href="#forecast">
+          <a class="nav-link flex h-9 items-center gap-2.5 rounded-sm px-3 text-ink-muted hover:text-emerald" href="#forecast">
             <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-trend" /></svg>
             Forecast
           </a>
@@ -147,12 +237,12 @@
     </nav>
   </div>
 
-  <div class="flex flex-col gap-1 border-t border-line pt-3 text-sm">
-    <button class="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-control text-sm font-semibold hover:bg-canvas" type="button">
-      <svg aria-hidden="true" class="h-4 w-4 shrink-0 text-ink-muted"><use href="#i-share" /></svg>
+  <div class="seam flex flex-col gap-1 border-t pt-3 text-sm">
+    <button class="btn flex h-9 w-full items-center justify-center gap-2 rounded-sm border border-emerald text-sm font-semibold text-emerald hover:bg-emerald-soft" type="button">
+      <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-share" /></svg>
       Bagikan laporan
     </button>
-    <a class="flex h-9 items-center gap-2.5 rounded-lg px-3 text-ink-muted hover:bg-canvas hover:text-ink" href="#pengaturan">
+    <a class="nav-link flex h-9 items-center gap-2.5 rounded-sm px-3 text-ink-muted hover:text-emerald" href="#pengaturan">
       <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-sliders" /></svg>
       Pengaturan
     </a>
@@ -165,29 +255,30 @@
 
   <div class="app-scroll min-w-0">
 
-    <!-- 2. PAGE TITLE ROW. No bar, no blur: the title sits on the ground. -->
+    <!-- 2. PAGE TITLE ROW. The title sits on the pearl ground — no bar,
+         no frosted header. -->
     <header class="mx-auto w-full max-w-[1200px] px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">
       <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
         <div class="min-w-0">
-          <h1 class="text-2xl font-bold tracking-tight">Dana pernikahan Ayu &amp; Budi</h1>
+          <h1 class="t-headline">Dana pernikahan Ayu &amp; Budi</h1>
           <p class="mt-1 max-w-[62ch] text-sm text-ink-muted">
             Selamat pagi. Satu pos perlu perhatian: Venue &amp; Gedung lewat Rp 500.000 dari anggaran.
           </p>
         </div>
 
         <div class="ml-auto flex items-center gap-2">
-          <button class="hidden h-9 items-center gap-1.5 rounded-lg border border-control bg-surface px-3 text-sm font-semibold hover:bg-canvas sm:inline-flex" type="button">
-            <svg aria-hidden="true" class="h-4 w-4 shrink-0 text-ink-muted"><use href="#i-plus" /></svg>
+          <button class="btn hidden h-9 items-center gap-1.5 rounded-sm border border-emerald px-3 text-sm font-semibold text-emerald hover:bg-emerald-soft sm:inline-flex" type="button">
+            <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-plus" /></svg>
             Tambah manual
           </button>
-          <button class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3.5 text-sm font-semibold text-white hover:bg-brand-deep" type="button">
+          <button class="btn inline-flex h-9 items-center gap-1.5 rounded-sm bg-emerald px-3.5 text-sm font-semibold text-pearl hover:bg-emerald-deep" type="button">
             <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-upload" /></svg>
             Impor mutasi
           </button>
-          <button aria-label="Notifikasi" class="flex h-9 w-9 items-center justify-center rounded-lg text-ink-muted hover:bg-canvas hover:text-ink" type="button">
+          <button aria-label="Notifikasi" class="btn flex h-9 w-9 items-center justify-center rounded-sm text-ink-muted hover:bg-emerald-soft hover:text-emerald" type="button">
             <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-bell" /></svg>
           </button>
-          <button aria-label="Akun Ayu &amp; Budi" class="flex h-8 w-8 items-center justify-center rounded-full bg-canvas text-xs font-bold text-ink hover:bg-rule" type="button">AB</button>
+          <button aria-label="Akun Ayu &amp; Budi" class="btn flex h-8 w-8 items-center justify-center rounded-full bg-emerald-soft text-xs font-bold text-emerald" type="button">AB</button>
         </div>
       </div>
     </header>
@@ -197,248 +288,258 @@
       <!-- 3. FORECAST — the screen's answer in words, not in a box. -->
       <section aria-labelledby="proyeksi" class="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 sm:flex-nowrap">
         <div class="min-w-0">
-          <h2 class="text-base font-semibold" id="proyeksi">
+          <h2 class="font-semibold" id="proyeksi">
             Proyeksi aman. Estimasi saldo hari H <span class="tabular-nums">Rp 125.000.000</span>, surplus
-            <span class="tabular-nums text-brand">Rp 5.000.000</span>.
+            <span class="tabular-nums text-emerald">Rp 5.000.000</span>.
           </h2>
           <p class="mt-1 max-w-[72ch] text-sm text-ink-muted">
             Sisihkan <span class="font-semibold tabular-nums text-ink">Rp 1.250.000</span> per orang tiap bulan
             supaya cashflow tetap aman sampai akad.
           </p>
         </div>
-        <a class="shrink-0 text-sm font-semibold text-brand hover:underline" href="#forecast">Simulasi forecast</a>
+        <a class="u-link shrink-0 text-sm font-semibold text-emerald" href="#forecast">Simulasi forecast</a>
       </section>
 
-      <!-- 4. THE ANSWER. The brand's obsidian band: the one moment that must
-           feel settled. Total, target and milestones in a single object. -->
-      <section aria-labelledby="total-dana" class="on-dark rounded-lg bg-obsidian p-5 sm:p-6">
-        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 class="text-sm font-medium text-control" id="total-dana">Total tabungan pernikahan</h2>
-          <p class="flex items-center gap-1.5 text-xs text-control">
-            <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-rose"></span>
+      <!-- 4. THE ANSWER. The one emerald field on the screen: the moment that
+           must feel settled. Total, target and milestones in a single object,
+           graded top-left to bottom-right — never a flat fill. -->
+      <section aria-labelledby="total-dana" class="on-dark hero-field shadow-card rounded-md p-6 sm:p-8">
+        <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+          <h2 class="t-eyebrow flex items-center gap-3 text-gold" id="total-dana">
+            <span aria-hidden="true" class="h-px w-6 shrink-0 bg-gold"></span>
+            Total tabungan pernikahan
+          </h2>
+          <p class="flex items-center gap-2 text-sm text-pearl-muted">
+            <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-gold"></span>
             Milestone katering tercapai
           </p>
         </div>
-        <p class="mt-1 text-[32px] font-bold leading-none tracking-tight tabular-nums text-canvas">Rp 87.500.000</p>
-        <p class="mt-2 text-sm text-control"><span class="font-semibold tabular-nums text-brand-on-dark">72,9%</span> dari target</p>
+        <p class="t-total mt-3 tabular-nums text-pearl">Rp 87.500.000</p>
+        <p class="mt-2 text-sm text-pearl-muted"><span class="font-semibold tabular-nums text-gold">72,9%</span> dari target</p>
 
         <div
           aria-label="Dana terkumpul Rp 87.500.000 dari target Rp 120.000.000"
           aria-valuemax="120000000"
           aria-valuemin="0"
           aria-valuenow="87500000"
-          class="relative mt-3 h-2 w-full overflow-hidden rounded-full bg-obsidian-raise"
+          class="relative mt-4 h-2 w-full overflow-hidden rounded-full bg-white/15"
           role="progressbar">
-          <div class="h-full rounded-full bg-brand-on-dark" style="width:72.9%"></div>
-          <span aria-hidden="true" class="absolute inset-y-0 w-px bg-obsidian" style="left:50%"></span>
-          <span aria-hidden="true" class="absolute inset-y-0 w-px bg-obsidian" style="left:70%"></span>
+          <div class="h-full rounded-full bg-gold" style="width:72.9%"></div>
+          <span aria-hidden="true" class="absolute inset-y-0 w-px bg-white/60" style="left:50%"></span>
+          <span aria-hidden="true" class="absolute inset-y-0 w-px bg-white/60" style="left:70%"></span>
         </div>
 
-        <div aria-hidden="true" class="relative mt-2 h-4 text-xs text-control">
+        <div aria-hidden="true" class="relative mt-2 h-5 text-sm text-pearl-muted">
           <span class="absolute -translate-x-1/2 whitespace-nowrap" style="left:50%">Katering<span class="hidden sm:inline"> 50%</span></span>
           <span class="absolute -translate-x-1/2 whitespace-nowrap" style="left:70%">Gedung<span class="hidden sm:inline"> 70%</span></span>
         </div>
 
-        <div class="mt-1 flex items-baseline justify-between gap-3 text-xs text-control">
+        <div class="mt-1 flex items-baseline justify-between gap-3 text-sm text-pearl-muted">
           <span class="tabular-nums">Rp 0</span>
-          <span>Target <span class="font-semibold tabular-nums text-canvas">Rp 120.000.000</span></span>
+          <span>Target <span class="font-semibold tabular-nums text-pearl">Rp 120.000.000</span></span>
         </div>
 
-        <dl class="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-obsidian-raise sm:grid-cols-3">
-          <div class="flex items-baseline justify-between gap-3 bg-obsidian pt-3 sm:block">
-            <dt class="text-xs text-control">Kekurangan target</dt>
-            <dd class="text-base font-semibold tabular-nums text-canvas sm:mt-0.5">Rp 32.500.000 <span class="text-xs font-normal text-control">tersisa</span></dd>
+        <dl class="mt-6 grid grid-cols-1 sm:grid-cols-3">
+          <div class="seam-dark flex items-baseline justify-between gap-3 border-t pt-3 sm:block sm:pr-5">
+            <dt class="text-sm text-pearl-muted">Kekurangan target</dt>
+            <dd class="text-base font-semibold tabular-nums text-pearl sm:mt-1">Rp 32.500.000 <span class="text-sm font-normal text-pearl-muted">tersisa</span></dd>
           </div>
-          <div class="flex items-baseline justify-between gap-3 bg-obsidian pt-3 sm:block sm:pl-4">
-            <dt class="text-xs text-control">Perkiraan tercapai</dt>
-            <dd class="text-base font-semibold tabular-nums text-canvas sm:mt-0.5">6 bulan <span class="text-xs font-normal text-control">(Okt 2026)</span></dd>
+          <div class="seam-dark flex items-baseline justify-between gap-3 border-t pt-3 sm:block sm:border-l sm:pl-5">
+            <dt class="text-sm text-pearl-muted">Perkiraan tercapai</dt>
+            <dd class="text-base font-semibold tabular-nums text-pearl sm:mt-1">6 bulan <span class="text-sm font-normal text-pearl-muted">(Okt 2026)</span></dd>
           </div>
-          <div class="flex items-baseline justify-between gap-3 bg-obsidian pt-3 sm:block sm:pl-4">
-            <dt class="text-xs text-control">Laju tabungan bersama</dt>
-            <dd class="text-base font-semibold tabular-nums text-canvas sm:mt-0.5">Rp 7.500.000 <span class="text-xs font-normal text-control">/ bulan</span></dd>
+          <div class="seam-dark flex items-baseline justify-between gap-3 border-t pt-3 sm:block sm:border-l sm:pl-5">
+            <dt class="text-sm text-pearl-muted">Laju tabungan bersama</dt>
+            <dd class="text-base font-semibold tabular-nums text-pearl sm:mt-1">Rp 7.500.000 <span class="text-sm font-normal text-pearl-muted">/ bulan</span></dd>
           </div>
         </dl>
       </section>
 
-      <!-- 5. THIS MONTH — four peer metrics in one divided container. -->
-      <section aria-label="Ringkasan bulan ini" class="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-        <div class="bg-surface p-4 sm:p-5">
+      <!-- 5. THIS MONTH — four floating white data cards on the pearl ground:
+           sheen, gold hairline, soft green lift. -->
+      <section aria-label="Ringkasan bulan ini" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="card-sheen seam rounded-sm border p-4 sm:p-5">
           <div class="flex items-baseline justify-between gap-3 lg:block">
             <p class="text-sm text-ink-muted">Uang masuk bulan ini</p>
-            <p class="text-xl font-bold tracking-tight tabular-nums lg:mt-1 lg:text-2xl">Rp 14.500.000</p>
+            <p class="text-2xl font-bold tracking-[-0.02em] tabular-nums lg:mt-1">Rp 14.500.000</p>
           </div>
-          <p class="mt-1 text-xs text-ink-muted"><span class="font-semibold tabular-nums text-brand">+12%</span> vs bulan lalu</p>
+          <p class="mt-1 text-sm text-ink-muted"><span class="font-semibold tabular-nums text-emerald">+12%</span> vs bulan lalu</p>
         </div>
-        <div class="bg-surface p-4 sm:p-5">
+        <div class="card-sheen seam rounded-sm border p-4 sm:p-5">
           <div class="flex items-baseline justify-between gap-3 lg:block">
             <p class="text-sm text-ink-muted">Uang keluar bulan ini</p>
-            <p class="text-xl font-bold tracking-tight tabular-nums lg:mt-1 lg:text-2xl">Rp 8.200.000</p>
+            <p class="text-2xl font-bold tracking-[-0.02em] tabular-nums lg:mt-1">Rp 8.200.000</p>
           </div>
-          <p class="mt-1 text-xs text-ink-muted">Alokasi DP vendor &amp; busana</p>
+          <p class="mt-1 text-sm text-ink-muted">Alokasi DP vendor &amp; busana</p>
         </div>
-        <div class="bg-surface p-4 sm:p-5">
+        <div class="card-sheen seam rounded-sm border p-4 sm:p-5">
           <div class="flex items-baseline justify-between gap-3 lg:block">
             <p class="text-sm text-ink-muted">Komitmen tertunda</p>
-            <p class="text-xl font-bold tracking-tight tabular-nums lg:mt-1 lg:text-2xl">Rp 18.000.000</p>
+            <p class="text-2xl font-bold tracking-[-0.02em] tabular-nums lg:mt-1">Rp 18.000.000</p>
           </div>
-          <p class="mt-1 text-xs text-ink-muted">3 vendor belum jatuh tempo</p>
+          <p class="mt-1 text-sm text-ink-muted">3 vendor belum jatuh tempo</p>
         </div>
-        <div class="bg-surface p-4 sm:p-5">
+        <div class="card-sheen seam rounded-sm border p-4 sm:p-5">
           <div class="flex items-baseline justify-between gap-3 lg:block">
             <p class="text-sm text-ink-muted">Rekening bersama</p>
-            <p class="text-xl font-bold tracking-tight tabular-nums lg:mt-1 lg:text-2xl">Rp 23.450.000</p>
+            <p class="text-2xl font-bold tracking-[-0.02em] tabular-nums lg:mt-1">Rp 23.450.000</p>
           </div>
-          <p class="mt-1 text-xs text-ink-muted">Siap dialokasikan</p>
+          <p class="mt-1 text-sm text-ink-muted">Siap dialokasikan</p>
         </div>
       </section>
 
-      <!-- 6. THE COUPLE — two people, one axis. Rose and cobalt are attribution. -->
-      <section aria-labelledby="alokasi" class="rounded-lg border border-line bg-surface p-5">
-        <h2 class="text-base font-semibold" id="alokasi">Alokasi &amp; kemitraan dana</h2>
-        <p class="text-xs text-ink-muted">Komposisi dana yang terkumpul. Tercatat bersama, setara, tanpa kompetisi.</p>
+      <!-- 6. THE COUPLE — two people, one axis. Attribution only:
+           Dana Ayu = emerald, Dana Budi = gold. Totals stay ink. -->
+      <section aria-labelledby="alokasi" class="panel-surface rounded-md p-6">
+        <h2 class="t-h3 text-ink" id="alokasi">Alokasi &amp; kemitraan dana</h2>
+        <p class="mt-1 text-sm text-ink-muted">Komposisi dana yang terkumpul. Tercatat bersama, setara, tanpa kompetisi.</p>
 
         <div aria-hidden="true" class="mt-4 flex h-1.5 w-full overflow-hidden rounded-full">
-          <div class="h-full bg-rose" style="width:48%"></div>
-          <div class="h-full bg-brand" style="width:52%"></div>
+          <div class="h-full bg-emerald" style="width:48%"></div>
+          <div class="h-full bg-gold" style="width:52%"></div>
         </div>
 
-        <ul>
-          <li class="flex items-baseline justify-between gap-3 border-b border-rule py-3">
+        <ul class="mt-1 divide-y divide-rule">
+          <li class="flex items-baseline justify-between gap-3 py-3">
             <span class="flex items-center gap-2">
-              <span aria-hidden="true" class="h-2 w-2 shrink-0 rounded-full bg-rose"></span>
+              <span aria-hidden="true" class="h-2 w-2 shrink-0 rounded-full bg-emerald"></span>
               <span class="text-sm font-semibold">Dana Ayu</span>
             </span>
             <span class="flex items-baseline gap-3 text-right">
               <span class="text-base font-semibold tabular-nums">Rp 42.000.000</span>
-              <span class="w-9 text-xs tabular-nums text-ink-muted">48%</span>
+              <span class="w-9 text-sm tabular-nums text-ink-muted">48%</span>
             </span>
           </li>
           <li class="flex items-baseline justify-between gap-3 py-3">
             <span class="flex items-center gap-2">
-              <span aria-hidden="true" class="h-2 w-2 shrink-0 rounded-full bg-brand"></span>
+              <span aria-hidden="true" class="h-2 w-2 shrink-0 rounded-full bg-gold"></span>
               <span class="text-sm font-semibold">Dana Budi</span>
             </span>
             <span class="flex items-baseline gap-3 text-right">
               <span class="text-base font-semibold tabular-nums">Rp 45.500.000</span>
-              <span class="w-9 text-xs tabular-nums text-ink-muted">52%</span>
+              <span class="w-9 text-sm tabular-nums text-ink-muted">52%</span>
             </span>
           </li>
         </ul>
-        <p class="mt-2 text-xs text-ink-muted">Kedua kontribusi terverifikasi penuh.</p>
+        <p class="mt-2 text-sm text-ink-muted">Kedua kontribusi terverifikasi penuh.</p>
       </section>
 
-      <!-- 7. WORKBENCH -->
+      <!-- 7. WORKBENCH — graded panels holding white data cards. -->
       <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
 
         <div class="flex flex-col gap-4 lg:col-span-7">
 
           <!-- 7a. Budget vs actual -->
-          <section aria-labelledby="anggaran-judul" class="rounded-lg border border-line bg-surface p-5">
+          <section aria-labelledby="anggaran-judul" class="panel-surface rounded-md p-6">
             <div class="flex items-baseline justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="text-base font-semibold" id="anggaran-judul">Anggaran vs realisasi</h2>
-                <p class="text-xs text-ink-muted">Batas alokasi tiap pos perhelatan</p>
+                <h2 class="t-h3 text-ink" id="anggaran-judul">Anggaran vs realisasi</h2>
+                <p class="mt-1 text-sm text-ink-muted">Batas alokasi tiap pos perhelatan</p>
               </div>
-              <a class="shrink-0 text-sm font-semibold text-ink hover:text-brand hover:underline" href="#anggaran">Kelola semua</a>
+              <a class="u-link shrink-0 text-sm font-semibold text-emerald" href="#anggaran">Kelola semua</a>
             </div>
 
-            <table class="mt-3 w-full text-left">
-              <caption class="sr-only">Anggaran, realisasi, dan sisa alokasi per pos perhelatan</caption>
-              <thead>
-                <tr class="border-b border-line text-xs text-ink-muted">
-                  <th class="pb-2 font-medium" scope="col">Kategori</th>
-                  <th class="hidden pb-2 text-right font-medium sm:table-cell" scope="col">Anggaran</th>
-                  <th class="hidden pb-2 text-right font-medium sm:table-cell" scope="col">Terpakai</th>
-                  <th class="pb-2 text-right font-medium" scope="col">Sisa alokasi</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-rule">
-                <tr>
-                  <th class="py-2.5 pr-3 text-left font-medium" scope="row">
-                    Catering
-                    <span class="block text-sm font-normal text-ink-muted"><span class="tabular-nums sm:hidden">Rp 20.000.000 dari Rp 35.000.000, </span>57% terserap</span>
-                  </th>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 35.000.000</td>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 20.000.000</td>
-                  <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums">Rp 15.000.000</td>
-                </tr>
-                <tr>
-                  <th class="py-2.5 pr-3 text-left font-medium" scope="row">
-                    Venue &amp; Gedung
-                    <span class="block text-sm font-normal text-danger"><span class="tabular-nums sm:hidden">Rp 30.500.000 dari Rp 30.000.000, </span>102% terserap, lewat anggaran</span>
-                  </th>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 30.000.000</td>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 30.500.000</td>
-                  <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums text-danger">-Rp 500.000</td>
-                </tr>
-                <tr>
-                  <th class="py-2.5 pr-3 text-left font-medium" scope="row">
-                    Dekorasi Pelaminan
-                    <span class="block text-sm font-normal text-ink-muted"><span class="tabular-nums sm:hidden">Rp 7.500.000 dari Rp 15.000.000, </span>50% terserap</span>
-                  </th>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 15.000.000</td>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 7.500.000</td>
-                  <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums">Rp 7.500.000</td>
-                </tr>
-                <tr>
-                  <th class="py-2.5 pr-3 text-left font-medium" scope="row">
-                    Dokumentasi &amp; Foto
-                    <span class="block text-sm font-normal text-ink-muted"><span class="tabular-nums sm:hidden">Rp 4.000.000 dari Rp 10.000.000, </span>40% terserap</span>
-                  </th>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 10.000.000</td>
-                  <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 4.000.000</td>
-                  <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums">Rp 6.000.000</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="card-sheen seam mt-4 rounded-sm border p-4">
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">Anggaran, realisasi, dan sisa alokasi per pos perhelatan</caption>
+                <thead>
+                  <tr class="border-b border-rule text-ink-muted">
+                    <th class="pb-2 font-medium" scope="col">Kategori</th>
+                    <th class="hidden pb-2 text-right font-medium sm:table-cell" scope="col">Anggaran</th>
+                    <th class="hidden pb-2 text-right font-medium sm:table-cell" scope="col">Terpakai</th>
+                    <th class="pb-2 text-right font-medium" scope="col">Sisa alokasi</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-rule">
+                  <tr>
+                    <th class="py-2.5 pr-3 text-left font-medium" scope="row">
+                      Catering
+                      <span class="block text-sm font-normal text-ink-muted"><span class="tabular-nums sm:hidden">Rp 20.000.000 dari Rp 35.000.000, </span>57% terserap</span>
+                    </th>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 35.000.000</td>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 20.000.000</td>
+                    <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums">Rp 15.000.000</td>
+                  </tr>
+                  <tr>
+                    <th class="py-2.5 pr-3 text-left font-medium" scope="row">
+                      Venue &amp; Gedung
+                      <span class="block text-sm font-normal text-danger"><span class="tabular-nums sm:hidden">Rp 30.500.000 dari Rp 30.000.000, </span>102% terserap, lewat anggaran</span>
+                    </th>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 30.000.000</td>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 30.500.000</td>
+                    <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums text-danger">-Rp 500.000</td>
+                  </tr>
+                  <tr>
+                    <th class="py-2.5 pr-3 text-left font-medium" scope="row">
+                      Dekorasi Pelaminan
+                      <span class="block text-sm font-normal text-ink-muted"><span class="tabular-nums sm:hidden">Rp 7.500.000 dari Rp 15.000.000, </span>50% terserap</span>
+                    </th>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 15.000.000</td>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 7.500.000</td>
+                    <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums">Rp 7.500.000</td>
+                  </tr>
+                  <tr>
+                    <th class="py-2.5 pr-3 text-left font-medium" scope="row">
+                      Dokumentasi &amp; Foto
+                      <span class="block text-sm font-normal text-ink-muted"><span class="tabular-nums sm:hidden">Rp 4.000.000 dari Rp 10.000.000, </span>40% terserap</span>
+                    </th>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 10.000.000</td>
+                    <td class="hidden py-2.5 pl-3 text-right tabular-nums sm:table-cell">Rp 4.000.000</td>
+                    <td class="whitespace-nowrap py-2.5 pl-3 text-right font-semibold tabular-nums">Rp 6.000.000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <!-- 7b. Commitments — time-sensitive, so it sits above the long feed. -->
-          <section aria-labelledby="komitmen-judul" class="rounded-lg border border-line bg-surface p-5">
+          <section aria-labelledby="komitmen-judul" class="panel-surface rounded-md p-6">
             <div class="flex items-baseline justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="text-base font-semibold" id="komitmen-judul">Komitmen mendatang</h2>
-                <p class="text-xs text-ink-muted">Sudah dikomitmenkan, belum lunas</p>
+                <h2 class="t-h3 text-ink" id="komitmen-judul">Komitmen mendatang</h2>
+                <p class="mt-1 text-sm text-ink-muted">Sudah dikomitmenkan, belum lunas</p>
               </div>
-              <a class="shrink-0 text-sm font-semibold text-ink hover:text-brand hover:underline" href="#komitmen">Semua</a>
+              <a class="u-link shrink-0 text-sm font-semibold text-emerald" href="#komitmen">Semua</a>
             </div>
 
-            <ul class="mt-1 divide-y divide-rule">
-              <li class="py-3">
-                <div class="flex items-baseline justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="truncate font-medium">Dekorasi Pelaminan</p>
-                    <p class="truncate text-xs text-ink-muted">Nirmala Décor · tempo 20 Des 2026</p>
+            <div class="card-sheen seam mt-4 rounded-sm border px-4">
+              <ul class="divide-y divide-rule">
+                <li class="py-3">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-medium">Dekorasi Pelaminan</p>
+                      <p class="truncate text-sm text-ink-muted">Nirmala Décor · tempo 20 Des 2026</p>
+                    </div>
+                    <p class="shrink-0 text-sm font-semibold tabular-nums">Rp 10.000.000</p>
                   </div>
-                  <p class="shrink-0 font-semibold tabular-nums">Rp 10.000.000</p>
-                </div>
-                <div aria-hidden="true" class="mt-2 h-1 overflow-hidden rounded-full bg-rule">
-                  <div class="h-full rounded-full bg-brand" style="width:50%"></div>
-                </div>
-                <p class="mt-1.5 flex justify-between gap-3 text-xs tabular-nums text-ink-muted">
-                  <span>Terbayar Rp 5.000.000</span>
-                  <span>Sisa Rp 5.000.000</span>
-                </p>
-              </li>
-              <li class="py-3">
-                <div class="flex items-baseline justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="truncate font-medium">Catering 500 pax</p>
-                    <p class="truncate text-xs text-ink-muted">Berkah Rasa · tempo 15 Jan 2027</p>
+                  <div aria-hidden="true" class="mt-2 h-1 overflow-hidden rounded-full bg-emerald-soft">
+                    <div class="h-full rounded-full bg-emerald" style="width:50%"></div>
                   </div>
-                  <p class="shrink-0 font-semibold tabular-nums">Rp 35.000.000</p>
-                </div>
-                <div aria-hidden="true" class="mt-2 h-1 overflow-hidden rounded-full bg-rule">
-                  <div class="h-full rounded-full bg-brand" style="width:43%"></div>
-                </div>
-                <p class="mt-1.5 flex justify-between gap-3 text-xs tabular-nums text-ink-muted">
-                  <span>Terbayar Rp 15.000.000</span>
-                  <span>Sisa Rp 20.000.000</span>
-                </p>
-              </li>
-            </ul>
+                  <p class="mt-1.5 flex justify-between gap-3 text-sm tabular-nums text-ink-muted">
+                    <span>Terbayar Rp 5.000.000</span>
+                    <span>Sisa Rp 5.000.000</span>
+                  </p>
+                </li>
+                <li class="py-3">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-medium">Catering 500 pax</p>
+                      <p class="truncate text-sm text-ink-muted">Berkah Rasa · tempo 15 Jan 2027</p>
+                    </div>
+                    <p class="shrink-0 text-sm font-semibold tabular-nums">Rp 35.000.000</p>
+                  </div>
+                  <div aria-hidden="true" class="mt-2 h-1 overflow-hidden rounded-full bg-emerald-soft">
+                    <div class="h-full rounded-full bg-emerald" style="width:43%"></div>
+                  </div>
+                  <p class="mt-1.5 flex justify-between gap-3 text-sm tabular-nums text-ink-muted">
+                    <span>Terbayar Rp 15.000.000</span>
+                    <span>Sisa Rp 20.000.000</span>
+                  </p>
+                </li>
+              </ul>
+            </div>
 
-            <a class="mt-3 flex h-9 items-center justify-center rounded-lg border border-control text-sm font-semibold hover:bg-canvas" href="#komitmen">
+            <a class="btn mt-4 flex h-9 items-center justify-center rounded-sm border border-emerald text-sm font-semibold text-emerald hover:bg-emerald-soft" href="#komitmen">
               Lihat 3 vendor lainnya
             </a>
           </section>
@@ -446,74 +547,77 @@
 
         <div class="flex flex-col gap-4 lg:col-span-5">
 
-          <!-- 7c. Ledger feed -->
-          <section aria-labelledby="transaksi-judul" class="rounded-lg border border-line bg-surface p-5">
+          <!-- 7c. Ledger feed — member dot carries attribution; the amount
+               carries the sign (emerald = money in). -->
+          <section aria-labelledby="transaksi-judul" class="panel-surface rounded-md p-6">
             <div class="flex items-baseline justify-between gap-3">
               <div class="min-w-0">
-                <h2 class="text-base font-semibold" id="transaksi-judul">Transaksi terbaru</h2>
-                <p class="text-xs text-ink-muted">Mutasi rekening &amp; pembayaran langsung</p>
+                <h2 class="t-h3 text-ink" id="transaksi-judul">Transaksi terbaru</h2>
+                <p class="mt-1 text-sm text-ink-muted">Mutasi rekening &amp; pembayaran langsung</p>
               </div>
-              <a class="shrink-0 text-sm font-semibold text-ink hover:text-brand hover:underline" href="#transaksi">Semua</a>
+              <a class="u-link shrink-0 text-sm font-semibold text-emerald" href="#transaksi">Semua</a>
             </div>
 
-            <ul class="mt-1 divide-y divide-rule">
-              <li class="flex items-baseline justify-between gap-3 py-3">
-                <span class="min-w-0">
-                  <span class="block truncate font-medium">Transfer tabungan bulanan</span>
-                  <span class="block truncate text-xs text-ink-muted">Budi · hari ini, 08.30 · BCA</span>
-                </span>
-                <span class="shrink-0 text-right">
-                  <span class="block font-semibold tabular-nums text-brand">+Rp 4.000.000</span>
-                  <span class="block text-xs text-ink-muted">Terverifikasi</span>
-                </span>
-              </li>
-              <li class="flex items-baseline justify-between gap-3 py-3">
-                <span class="min-w-0">
-                  <span class="block truncate font-medium">DP Dekorasi Pelaminan</span>
-                  <span class="block truncate text-xs text-ink-muted">Nirmala Décor · kemarin, 14.15 · invoice DEC-2026</span>
-                </span>
-                <span class="shrink-0 text-right">
-                  <span class="block font-semibold tabular-nums">-Rp 5.000.000</span>
-                  <span class="block text-xs text-ink-muted">Pos dekorasi</span>
-                </span>
-              </li>
-              <li class="flex items-baseline justify-between gap-3 py-3">
-                <span class="min-w-0">
-                  <span class="block truncate font-medium">Sewa sound &amp; lighting</span>
-                  <span class="block truncate text-xs text-ink-muted">12 Okt 2026 · Mandiri mutasi</span>
-                </span>
-                <span class="shrink-0 text-right">
-                  <span class="block font-semibold tabular-nums">-Rp 1.500.000</span>
-                  <span class="block text-xs text-ink-muted">Pos produksi</span>
-                </span>
-              </li>
-              <li class="flex items-baseline justify-between gap-3 py-3">
-                <span class="min-w-0">
-                  <span class="block truncate font-medium">Transfer tabungan bulanan</span>
-                  <span class="block truncate text-xs text-ink-muted">Ayu · 10 Okt 2026 · BCA</span>
-                </span>
-                <span class="shrink-0 text-right">
-                  <span class="block font-semibold tabular-nums text-brand">+Rp 4.000.000</span>
-                  <span class="block text-xs text-ink-muted">Terverifikasi</span>
-                </span>
-              </li>
-            </ul>
+            <div class="card-sheen seam mt-4 rounded-sm border px-4">
+              <ul class="divide-y divide-rule">
+                <li class="flex items-baseline justify-between gap-3 py-3">
+                  <span class="min-w-0">
+                    <span class="block truncate text-sm font-medium">Transfer tabungan bulanan</span>
+                    <span class="block truncate text-sm text-ink-muted"><span aria-hidden="true" class="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-gold align-middle"></span>Budi · hari ini, 08.30 · BCA</span>
+                  </span>
+                  <span class="shrink-0 text-right">
+                    <span class="block text-sm font-semibold tabular-nums text-emerald">+Rp 4.000.000</span>
+                    <span class="block text-sm text-ink-muted">Terverifikasi</span>
+                  </span>
+                </li>
+                <li class="flex items-baseline justify-between gap-3 py-3">
+                  <span class="min-w-0">
+                    <span class="block truncate text-sm font-medium">DP Dekorasi Pelaminan</span>
+                    <span class="block truncate text-sm text-ink-muted">Nirmala Décor · kemarin, 14.15 · invoice DEC-2026</span>
+                  </span>
+                  <span class="shrink-0 text-right">
+                    <span class="block text-sm font-semibold tabular-nums">-Rp 5.000.000</span>
+                    <span class="block text-sm text-ink-muted">Pos dekorasi</span>
+                  </span>
+                </li>
+                <li class="flex items-baseline justify-between gap-3 py-3">
+                  <span class="min-w-0">
+                    <span class="block truncate text-sm font-medium">Sewa sound &amp; lighting</span>
+                    <span class="block truncate text-sm text-ink-muted">12 Okt 2026 · Mandiri mutasi</span>
+                  </span>
+                  <span class="shrink-0 text-right">
+                    <span class="block text-sm font-semibold tabular-nums">-Rp 1.500.000</span>
+                    <span class="block text-sm text-ink-muted">Pos produksi</span>
+                  </span>
+                </li>
+                <li class="flex items-baseline justify-between gap-3 py-3">
+                  <span class="min-w-0">
+                    <span class="block truncate text-sm font-medium">Transfer tabungan bulanan</span>
+                    <span class="block truncate text-sm text-ink-muted"><span aria-hidden="true" class="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-emerald align-middle"></span>Ayu · 10 Okt 2026 · BCA</span>
+                  </span>
+                  <span class="shrink-0 text-right">
+                    <span class="block text-sm font-semibold tabular-nums text-emerald">+Rp 4.000.000</span>
+                    <span class="block text-sm text-ink-muted">Terverifikasi</span>
+                  </span>
+                </li>
+              </ul>
+            </div>
           </section>
 
           <!-- 7d. Import — a secondary action, never a second primary. -->
-          <section aria-labelledby="impor-judul" class="rounded-lg border border-line bg-surface p-5">
-            <h2 class="text-base font-semibold" id="impor-judul">Rekonsiliasi bank otomatis</h2>
+          <section aria-labelledby="impor-judul" class="panel-surface rounded-md p-6">
+            <h2 class="t-h3 text-ink" id="impor-judul">Rekonsiliasi bank otomatis</h2>
             <p class="mt-1 text-ink-muted">
               Impor mutasi e-statement BCA, Mandiri, atau Bank Jago dalam satu klik, tanpa menyimpan
               kredensial login Anda.
             </p>
-            <p class="mt-2 text-xs text-ink-muted">Setiap impor dicocokkan dengan saldo bank.</p>
+            <p class="mt-2 text-sm text-ink-muted">Setiap impor dicocokkan dengan saldo bank.</p>
 
-            <button class="mt-4 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-control text-sm font-semibold hover:bg-canvas" type="button">
-              <svg aria-hidden="true" class="h-4 w-4 shrink-0 text-ink-muted"><use href="#i-file-up" /></svg>
+            <button class="btn mt-4 flex h-9 w-full items-center justify-center gap-1.5 rounded-sm border border-emerald text-sm font-semibold text-emerald hover:bg-emerald-soft" type="button">
+              <svg aria-hidden="true" class="h-4 w-4 shrink-0"><use href="#i-file-up" /></svg>
               Unggah e-statement PDF/CSV
             </button>
-            <p class="mt-2 text-center text-xs text-ink-faint">Enkripsi 256-bit standar perbankan Indonesia</p>
+            <p class="mt-2 text-center text-sm text-ink-muted">Enkripsi 256-bit standar perbankan Indonesia</p>
           </section>
         </div>
       </div>
@@ -521,12 +625,12 @@
   </div>
 
   <!-- ============================================================== -->
-  <!-- MOBILE NAV                                                     -->
+  <!-- MOBILE NAV — pearl bar, gold top seam, emerald active state.    -->
   <!-- ============================================================== -->
-  <nav aria-label="Navigasi seluler" class="shrink-0 border-t border-line bg-surface lg:hidden">
+  <nav aria-label="Navigasi seluler" class="seam shadow-nav shrink-0 border-t bg-pearl lg:hidden">
     <ul class="flex px-3">
       <li class="flex-1">
-        <a aria-current="page" class="flex h-14 flex-col items-center justify-center gap-0.5 text-brand" href="#overview">
+        <a aria-current="page" class="flex h-14 flex-col items-center justify-center gap-0.5 text-emerald" href="#overview">
           <svg aria-hidden="true" class="h-5 w-5 shrink-0"><use href="#i-grid" /></svg>
           <span class="text-xs font-semibold">Overview</span>
         </a>

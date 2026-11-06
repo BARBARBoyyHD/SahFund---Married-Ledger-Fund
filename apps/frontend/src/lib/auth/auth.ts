@@ -18,7 +18,7 @@ declare global {
  * One auth instance per isolate, created on first use so the D1 binding is read at
  * request time — same reason `getDb()` is lazy (ITA §2). The schema CLI never runs
  * this module (it has no Worker binding); the tables in `db/schema.ts` were generated
- * from a throwaway config with the same options.
+ * with `npx @better-auth/cli generate` from a throwaway config with the same options.
  */
 function createAuth() {
   const { env } = getCloudflareContext();

@@ -43,11 +43,12 @@ function authFailure(error: unknown) {
     );
   }
 
-  // Missing secret, D1 unreachable, anything unexpected: generic message, real cause to logs.
+  // Missing secret, D1 unreachable, anything unexpected: generic message to the user,
+  // the error's name only to the logs — never a message, which can carry a row (AGENTS §11.9).
   console.error("auth: request failed", {
     route: "POST /api/auth",
     status: 503,
-    cause: error instanceof Error ? error.message : typeof error,
+    cause: error instanceof Error ? error.name : typeof error,
   });
   return NextResponse.json(
     { message: "Layanan masuk sedang tidak tersedia. Coba lagi sebentar lagi." },
@@ -61,7 +62,15 @@ function authFailure(error: unknown) {
  * set by Better Auth itself — this handler only relays it.
  */
 export async function POST(request: Request) {
-  if (!(await allowAttempt(getDb(), `ip:${clientKey(request)}`, AUTH_LIMIT))) {
+  let allowed: boolean;
+  try {
+    allowed = await allowAttempt(getDb(), `ip:${clientKey(request)}`, AUTH_LIMIT);
+  } catch (error) {
+    // A missing binding throws here, before the limiter's own fail-open catch — answer 503.
+    return authFailure(error);
+  }
+
+  if (!allowed) {
     return NextResponse.json(
       { message: "Terlalu banyak percobaan. Tunggu satu menit lalu coba lagi." },
       { status: 429, headers: { "retry-after": "60" } },

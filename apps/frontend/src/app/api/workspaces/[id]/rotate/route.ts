@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { logFailure, unavailable } from "@/lib/http";
 import { membershipForApi } from "@/lib/membership";
 import { WORKSPACE_MESSAGE } from "@/lib/workspace/messages";
-import { rotateInviteCode } from "@/lib/workspace/service";
+import { rotateInviteCode } from "@/lib/workspace/workspace-mutations";
 
 /**
  * Rotate the pocket code — owner only (US-07). One UPDATE: the old code stops joining

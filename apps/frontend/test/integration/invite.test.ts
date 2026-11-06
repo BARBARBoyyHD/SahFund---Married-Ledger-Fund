@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { addUser, startD1 } from "../helpers/d1.ts";
 import { rateLimits } from "../../src/lib/db/schema.ts";
-import { createWorkspace, joinWorkspace, sendInvite } from "../../src/lib/workspace/service.ts";
+import { createWorkspace, joinWorkspace, sendInvite } from "../../src/lib/workspace/workspace-mutations.ts";
 
 /**
  * The invite path against real SQLite (US-52): the NFR-02 budget is spent before the

@@ -1,26 +1,10 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-
-import { PageSkeleton } from "@/components/app/skeleton";
-import { WorkspaceShell } from "./workspace-shell";
-
-export const metadata: Metadata = { title: "Workspace" };
+import { redirect } from "next/navigation";
 
 /**
- * US-04: the URL id is never enough — `WorkspaceShell` resolves the caller's membership
- * server-side (`requireMembership` redirects to `/login` or renders not-found). The
- * read streams behind `<Suspense>`; the fallback is the loading state.
+ * The `/w/:id` URL is retired (design D11 revised): one dashboard, and one workspace
+ * per user (`UNIQUE(members.userId)`), so there is nothing left to resolve from the id.
+ * Old links and bookmarks land on the dashboard instead of a stale shell.
  */
-export default function WorkspacePage({
-  params,
-}: {
-  params: Promise<{ workspaceId: string }>;
-}) {
-  return (
-    <main className="min-h-svh bg-pearl text-ink [--focus-ring:var(--color-emerald)]">
-      <Suspense fallback={<PageSkeleton />}>
-        <WorkspaceShell params={params} />
-      </Suspense>
-    </main>
-  );
+export default function WorkspacePage() {
+  redirect("/dashboard");
 }

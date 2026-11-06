@@ -10,6 +10,7 @@
     "test": "node --test \"src/**/*.test.ts\"",
     "test:integration": "node --test \"test/integration/*.test.ts\"",
     "check:residue": "node scripts/check-residue.mjs",
+    "db:seed:categories": "node scripts/seed-categories.mts",
     "e2e:server": "wrangler d1 migrations apply DB --local && next dev --port 3100",
     "e2e:server:workers": "wrangler d1 migrations apply DB --local && opennextjs-cloudflare build && wrangler dev --port 3100 --ip 127.0.0.1",
     "test:e2e": "playwright test"

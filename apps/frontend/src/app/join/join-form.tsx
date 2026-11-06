@@ -73,7 +73,7 @@ export function JoinForm({ initialCode }: { initialCode: string }) {
         return;
       }
 
-      if (typeof body?.workspaceId === "string") router.push(`/w/${body.workspaceId}`);
+      if (typeof body?.workspaceId === "string") router.push("/dashboard");
       else router.refresh();
     } catch {
       setMessage("Tidak bisa menghubungi server. Periksa koneksi lalu coba lagi.");

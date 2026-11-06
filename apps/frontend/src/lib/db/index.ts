@@ -21,14 +21,17 @@ let db: Db | undefined;
  * This is the only module that imports the driver (portability rule P3): a
  * future database swap changes this file plus schema.ts, nothing else.
  * D1 has no interactive transactions — write with `db.batch()` (AGENTS §2).
+ *
+ * A standalone script may pass the binding produced by wrangler's `getPlatformProxy`;
+ * Next requests pass nothing and read the OpenNext Cloudflare context instead.
  */
-export function getDb(): Db {
+export function getDb(binding?: unknown): Db {
   if (!db) {
+    const resolved = binding ?? getCloudflareContext().env.DB;
     // SPEC §7.1: `wrangler types` will generate CloudflareEnv; until then `env.DB` is
     // `unknown`, so narrow it once here instead of casting at every call site.
-    const binding = getCloudflareContext().env.DB as Parameters<typeof drizzle>[0] | undefined;
-    if (!binding) throw new Error("D1 binding DB is not available");
-    db = drizzle(binding, { schema });
+    if (!resolved) throw new Error("D1 binding DB is not available");
+    db = drizzle(resolved as Parameters<typeof drizzle>[0], { schema });
   }
   return db;
 }

@@ -36,6 +36,9 @@ export default defineConfig({
     // /api/health still answers 200. Switch the command below once that is
     // fixed — it is the same blocker PEP M1's deploy task will hit (SPEC R10).
     command: "npm run e2e:server",
+    // Keep e2e on the local Miniflare D1 even though `DB` has "remote": true in wrangler.jsonc
+    // (next.config.ts reads this to pass remoteBindings: false).
+    env: { E2E_LOCAL_DB: "1" },
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,

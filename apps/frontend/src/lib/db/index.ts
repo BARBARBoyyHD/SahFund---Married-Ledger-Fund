@@ -24,7 +24,9 @@ let db: Db | undefined;
  */
 export function getDb(): Db {
   if (!db) {
-    const binding = getCloudflareContext().env.DB;
+    // SPEC §7.1: `wrangler types` will generate CloudflareEnv; until then `env.DB` is
+    // `unknown`, so narrow it once here instead of casting at every call site.
+    const binding = getCloudflareContext().env.DB as Parameters<typeof drizzle>[0] | undefined;
     if (!binding) throw new Error("D1 binding DB is not available");
     db = drizzle(binding, { schema });
   }

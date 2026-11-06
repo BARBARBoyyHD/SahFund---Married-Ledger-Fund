@@ -12,9 +12,11 @@ export async function GET() {
       { status: "ok", db: "up" },
       { headers: { "cache-control": "no-store" } },
     );
-  } catch {
-    // No error detail in the body (AGENTS.md §8); nothing secret or row-level in logs (§11.9).
-    console.error("[health] database probe failed");
+  } catch (error) {
+    // No error detail in the body (AGENTS.md §8); the error's name only in logs (§11.9).
+    console.error("[health] database probe failed", {
+      cause: error instanceof Error ? error.name : typeof error,
+    });
     return Response.json(
       { status: "error", db: "down", message: "Database tidak dapat dihubungi. Coba lagi." },
       { status: 503, headers: { "cache-control": "no-store" } },

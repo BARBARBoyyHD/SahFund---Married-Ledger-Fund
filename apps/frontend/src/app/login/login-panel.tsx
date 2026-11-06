@@ -18,6 +18,14 @@ export async function LoginPanel({
 }) {
   const params = await searchParams;
   const mode: Mode = params.mode === "masuk" ? "sign-in" : "sign-up";
+  // US-53: the join link's `next` survives the sign-in detour; the server re-validates it.
+  const next = typeof params.next === "string" ? params.next : undefined;
+
+  /** Keep `next` when the visitor switches back to sign-in (sign-up ignores it). */
+  const tabHref = (item: Mode) =>
+    item === "sign-in" && next
+      ? `/login?mode=masuk&next=${encodeURIComponent(next)}`
+      : COPY[item].href;
 
   return (
     <>
@@ -30,7 +38,7 @@ export async function LoginPanel({
           return (
             <Link
               key={item}
-              href={COPY[item].href}
+              href={tabHref(item)}
               scroll={false}
               aria-current={active ? "page" : undefined}
               className={`flex h-10 items-center justify-center rounded-xs text-small font-bold transition-colors duration-150 ${
@@ -45,7 +53,7 @@ export async function LoginPanel({
         })}
       </nav>
 
-      <AuthForm key={mode} mode={mode} />
+      <AuthForm key={mode} mode={mode} next={next} />
     </>
   );
 }

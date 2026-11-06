@@ -3,12 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import {
-  fieldErrors,
-  signInSchema,
-  signUpSchema,
-  type FieldErrors,
-} from "@/lib/auth/schema";
+import { signInSchema, signUpSchema } from "@/lib/auth/schema";
+import { fieldErrors, type FieldErrors } from "@/lib/validation";
 import { BUTTON_PRIMARY, INPUT } from "@/components/landing/ui";
 
 export type Mode = "sign-up" | "sign-in";
@@ -28,7 +24,7 @@ const COPY = {
   },
 } as const;
 
-export function AuthForm({ mode }: { mode: Mode }) {
+export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
   const router = useRouter();
   const [values, setValues] = useState<Values>(EMPTY);
   const [errors, setErrors] = useState<FieldErrors<Values>>({});
@@ -59,7 +55,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     const payload =
       mode === "sign-up"
         ? { name: values.name, email: values.email, password: values.password }
-        : { email: values.email, password: values.password };
+        : { email: values.email, password: values.password, next };
 
     const parsed =
       mode === "sign-up"

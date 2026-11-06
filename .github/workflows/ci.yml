@@ -40,6 +40,23 @@ jobs:
       - run: npm ci
       # Includes the portability rules P1–P3 (SPEC §3.2).
       - run: npx eslint .
+      # The two SPEC §3.2 gates ESLint cannot express (P1 raw-SQL execution, P4 purity).
+      - name: P1 — no raw SQL execution outside the swap point
+        run: |
+          hits=$(grep -rnE '\.(execute|prepare)\(' src --include='*.ts' --include='*.tsx' | grep -v '^src/lib/db/' || true)
+          if [ -n "$hits" ]; then
+            echo "✖ P1 violation — raw SQL outside src/lib/db/:"
+            echo "$hits"
+            exit 1
+          fi
+      - name: P4 — src/core stays pure
+        run: |
+          hits=$(grep -rnE 'fetch\(|process\.env|Date\.now' src/core --include='*.ts' || true)
+          if [ -n "$hits" ]; then
+            echo "✖ P4 violation — I/O in src/core:"
+            echo "$hits"
+            exit 1
+          fi
 
   # M2 (SPEC §1.4): no Neon-era token may return outside the §5.4b allowlist.
   residue:
@@ -49,7 +66,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node apps/frontend/scripts/check-residue.mjs
+      - run: node scripts/check-residue.mjs
 
   unit:
     runs-on: ubuntu-latest

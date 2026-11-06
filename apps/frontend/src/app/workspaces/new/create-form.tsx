@@ -79,7 +79,7 @@ export function CreateWorkspaceForm() {
         return;
       }
 
-      if (typeof body?.id === "string") router.push(`/w/${body.id}`);
+      if (typeof body?.id === "string") router.push("/dashboard");
       else router.refresh();
     } catch {
       setMessage("Tidak bisa menghubungi server. Periksa koneksi lalu coba lagi.");

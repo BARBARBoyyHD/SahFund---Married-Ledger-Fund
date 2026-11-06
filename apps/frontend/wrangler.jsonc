@@ -10,13 +10,17 @@
     "binding": "ASSETS",
   },
   // D1 is the only datastore (ITA ADR-13). The binding is configuration, not a secret.
-  // The dev database (`sahfunddb`) was created in the Cloudflare dashboard; its id is below.
+  // `sahfunddb` is the PRODUCTION database (created in the Cloudflare dashboard); its id is below.
   // `wrangler d1 create sahfund-preview` is still needed for the preview database.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "sahfunddb",
       "database_id": "a7495b0b-f639-4abd-a059-16512d5b5485",
+      // Local dev writes to the real sahfunddb: `next dev` (via initOpenNextCloudflareForDev)
+      // and `wrangler dev` bind the remote DB instead of the local Miniflare copy.
+      // Delete this line to go back to isolated local dev (data in .wrangler/state).
+      "remote": true,
       "migrations_dir": "drizzle",
     },
   ],

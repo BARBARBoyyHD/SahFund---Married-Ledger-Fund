@@ -1,11 +1,11 @@
-import { and, asc, count, desc, eq, gt, gte, isNotNull, lt, lte, sum } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, lt, lte, sum } from "drizzle-orm";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { AppHeader } from "@/components/app/app-header";
 import { SignOutButton } from "@/components/app/sign-out-button";
+import { LINK } from "@/components/app/ui";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, Container, Eyebrow } from "@/components/landing/ui";
-import { Wordmark } from "@/components/mark";
 import {
   daysUntil,
   jakartaDay,
@@ -25,29 +25,11 @@ import {
   members,
   transactions,
   user,
-  workspaces,
 } from "@/lib/db/schema";
 import { requireSession } from "@/lib/session";
+import { readWorkspace } from "@/lib/workspace/context";
 import { DashboardActions } from "./dashboard-actions";
-import { Icon } from "./icons";
-
-/** Sidebar and mobile nav share one list; every href is a section on this page. */
-const NAV = [
-  { href: "#overview", label: "Overview", icon: "grid", current: true },
-  { href: "#transaksi", label: "Transaksi", icon: "ledger", current: false },
-  { href: "#anggaran", label: "Anggaran", icon: "wallet", current: false },
-  { href: "#komitmen", label: "Komitmen", icon: "calendar", current: false },
-  { href: "#forecast", label: "Forecast", icon: "trend", current: false },
-] as const;
-
-function initials(name: string) {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
+import { DashboardMobileNav, DashboardSidebar } from "./dashboard-nav";
 
 /**
  * The dashboard (design D11 revised): one page per user, read-only for now. Every
@@ -59,22 +41,8 @@ export async function DashboardContent() {
   const session = await requireSession();
   const db = getDb();
   const todayIso = jakartaDay(new Date());
-
-  // One row joins the caller's membership to their workspace — the read is scoped by
-  // the session's own id, never by anything the client sent (AGENTS §4/§9).
-  const [account] = await db
-    .select({
-      workspaceId: workspaces.id,
-      name: workspaces.name,
-      weddingDate: workspaces.weddingDate,
-      budgetTargetMinor: workspaces.budgetTargetMinor,
-      inviteCode: workspaces.inviteCode,
-      role: members.role,
-    })
-    .from(members)
-    .innerJoin(workspaces, eq(members.workspaceId, workspaces.id))
-    .where(eq(members.userId, session.user.id))
-    .limit(1);
+  // The caller's own membership → workspace row; null keeps the create/join prompt.
+  const account = await readWorkspace(session.user.id);
 
   if (!account) return <NoWorkspace name={session.user.name} />;
 
@@ -90,7 +58,6 @@ export async function DashboardContent() {
     contributionRows,
     recent,
     budgetRows,
-    categoryRows,
     commitmentRows,
     importRows,
   ] = await Promise.all([
@@ -182,14 +149,10 @@ export async function DashboardContent() {
           lt(transactions.amountMinor, BigInt(0)),
         ),
       )
-      .where(and(eq(categories.workspaceId, workspaceId), isNotNull(categories.budgetMinor)))
-      .groupBy(categories.id)
-      .orderBy(asc(categories.sort), asc(categories.name)),
-    // Every category, not only the ones with a budget: the manual-entry select needs them.
-    db
-      .select({ id: categories.id, name: categories.name })
-      .from(categories)
+      // Every category, budgeted or not: seeded workspaces show the taxonomy immediately,
+      // and the manual-entry select uses this same list. Realisasi is a left join.
       .where(eq(categories.workspaceId, workspaceId))
+      .groupBy(categories.id)
       .orderBy(asc(categories.sort), asc(categories.name)),
     db
       .select({
@@ -225,8 +188,9 @@ export async function DashboardContent() {
 
   const budgetTargetMinor =
     account.budgetTargetMinor === null ? null : toMinor(account.budgetTargetMinor);
-  const totalBudget = budgetRows.reduce((sumMinor, row) => sumMinor + toMinor(row.budgetMinor), 0);
-  const totalSpent = budgetRows.reduce(
+  const budgetedRows = budgetRows.filter((row) => row.budgetMinor !== null);
+  const totalBudget = budgetedRows.reduce((sumMinor, row) => sumMinor + toMinor(row.budgetMinor), 0);
+  const totalSpent = budgetedRows.reduce(
     (sumMinor, row) => sumMinor + Math.abs(toMinor(row.spent)),
     0,
   );
@@ -275,56 +239,12 @@ export async function DashboardContent() {
       </a>
 
       {/* Pearl sidebar, gold seam, emerald active state (design.html §1). */}
-      <aside className="hidden w-60 shrink-0 flex-col gap-6 border-r border-gold/35 bg-pearl px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-svh">
-        <Link href="/dashboard" className="flex items-center gap-2.5 rounded-xs px-2">
-          <Wordmark />
-        </Link>
-
-        <div className="card-sheen rounded-sm border border-gold/35 p-3">
-          <div className="flex items-center gap-2.5">
-            <span aria-hidden="true" className="relative flex shrink-0 -space-x-1.5">
-              {memberRows.slice(0, 2).map((member, index) => (
-                <span
-                  key={member.userId}
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ring-2 ring-surface ${
-                    index === 0 ? "bg-emerald text-pearl" : "bg-gold text-emerald"
-                  }`}
-                >
-                  {initials(member.name)}
-                </span>
-              ))}
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-small font-semibold text-ink">{account.name}</span>
-              <span className="flex items-center gap-1.5 text-small text-ink-muted">
-                <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
-                {weddingDays === null ? "Tanggal akad belum diatur" : `${weddingDays} hari lagi`}
-              </span>
-            </span>
-          </div>
-        </div>
-
-        <nav aria-label="Menu utama" className="text-small">
-          <ul className="flex flex-col gap-0.5">
-            {NAV.map((item) => (
-              <li key={item.href}>
-                <a
-                  href={item.href}
-                  aria-current={item.current ? "page" : undefined}
-                  className={`flex h-9 items-center gap-2.5 rounded-sm px-3 transition-colors ${
-                    item.current
-                      ? "bg-emerald font-semibold text-pearl"
-                      : "text-ink-muted hover:bg-emerald-soft hover:text-emerald"
-                  }`}
-                >
-                  <Icon name={item.icon} className="h-4 w-4 shrink-0" />
-                  {item.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
+      <DashboardSidebar
+        workspaceName={account.name}
+        weddingDate={account.weddingDate}
+        members={memberRows.map((member) => ({ userId: member.userId, name: member.name }))}
+        active="overview"
+      />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto lg:overflow-visible">
@@ -353,7 +273,7 @@ export async function DashboardContent() {
                       : formatRupiah(toMinor(account.budgetTargetMinor))
                   }
                   today={todayIso}
-                  categories={categoryRows}
+                  categories={budgetRows.map((row) => ({ id: row.id, name: row.name }))}
                   members={memberRows.map((member) => ({
                     id: member.userId,
                     name: member.name,
@@ -386,7 +306,7 @@ export async function DashboardContent() {
                       muncul.
                     </p>
                   </>
-                ) : !hasTransactions && pendingCommitments.length === 0 && budgetRows.length === 0 ? (
+                ) : !hasTransactions && pendingCommitments.length === 0 && budgetedRows.length === 0 ? (
                   <>
                     <h2 id="proyeksi" className="font-semibold text-ink">
                       Belum ada angka untuk diproyeksikan
@@ -445,6 +365,12 @@ export async function DashboardContent() {
                   </>
                 )}
               </div>
+              <Link
+                href="/dashboard/forecast"
+                className={`${LINK} shrink-0 text-small`}
+              >
+                Simulasi forecast
+              </Link>
             </section>
 
             {/* The one emerald field: total, target and milestones as one object. */}
@@ -585,9 +511,9 @@ export async function DashboardContent() {
               />
               <StatCard
                 label="Realisasi anggaran"
-                value={budgetRows.length > 0 ? formatRupiah(totalSpent) : "—"}
+                value={budgetedRows.length > 0 ? formatRupiah(totalSpent) : "—"}
                 note={
-                  budgetRows.length > 0
+                  budgetedRows.length > 0
                     ? `${percent(totalSpent, totalBudget)}% dari ${formatRupiah(totalBudget)}`
                     : "Belum ada anggaran per pos"
                 }
@@ -690,7 +616,7 @@ export async function DashboardContent() {
                   </div>
 
                   {budgetRows.length === 0 ? (
-                    <EmptyState>Belum ada anggaran per pos yang diisi.</EmptyState>
+                    <EmptyState>Belum ada kategori di workspace ini.</EmptyState>
                   ) : (
                     <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
                       <table className="w-full text-left text-small">
@@ -715,10 +641,10 @@ export async function DashboardContent() {
                         </thead>
                         <tbody className="divide-y divide-rule">
                           {budgetRows.map((row) => {
-                            const budget = toMinor(row.budgetMinor);
+                            const budget = row.budgetMinor === null ? null : toMinor(row.budgetMinor);
                             const spent = Math.abs(toMinor(row.spent));
-                            const left = budget - spent;
-                            const over = left < 0;
+                            const left = budget === null ? null : budget - spent;
+                            const over = left !== null && left < 0;
                             return (
                               <tr key={row.id}>
                                 <th scope="row" className="py-2.5 pr-3 text-left font-medium text-ink">
@@ -728,12 +654,17 @@ export async function DashboardContent() {
                                       over ? "text-danger" : "text-ink-muted"
                                     }`}
                                   >
-                                    {percent(spent, budget)}% terserap
-                                    {over ? ", lewat anggaran" : ""}
+                                    {budget === null
+                                      ? spent > 0
+                                        ? `${formatRupiah(spent)} terpakai`
+                                        : "Belum ada realisasi"
+                                      : `${percent(spent, budget)}% terserap${
+                                          over ? ", lewat anggaran" : ""
+                                        }`}
                                   </span>
                                 </th>
                                 <td className="hidden py-2.5 pl-3 text-right tabular-nums text-ink sm:table-cell">
-                                  {formatRupiah(budget)}
+                                  {budget === null ? "Belum diatur" : formatRupiah(budget)}
                                 </td>
                                 <td className="hidden py-2.5 pl-3 text-right tabular-nums text-ink sm:table-cell">
                                   {formatRupiah(spent)}
@@ -743,7 +674,7 @@ export async function DashboardContent() {
                                     over ? "text-danger" : "text-ink"
                                   }`}
                                 >
-                                  {formatRupiah(left)}
+                                  {left === null ? "—" : formatRupiah(left)}
                                 </td>
                               </tr>
                             );
@@ -759,11 +690,16 @@ export async function DashboardContent() {
                   id="komitmen"
                   className="panel-surface scroll-mt-6 rounded-md p-6"
                 >
-                  <div className="min-w-0">
-                    <h2 id="komitmen-judul" className="text-h3 font-bold text-ink">
-                      Komitmen mendatang
-                    </h2>
-                    <p className="mt-1 text-small text-ink-muted">Sudah dikomitmenkan, belum lunas</p>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 id="komitmen-judul" className="text-h3 font-bold text-ink">
+                        Komitmen mendatang
+                      </h2>
+                      <p className="mt-1 text-small text-ink-muted">Sudah dikomitmenkan, belum lunas</p>
+                    </div>
+                    <Link href="/dashboard/komitmen" className={`${LINK} shrink-0 text-small`}>
+                      Semua
+                    </Link>
                   </div>
 
                   {pendingCommitments.length === 0 ? (
@@ -808,9 +744,12 @@ export async function DashboardContent() {
                         </ul>
                       </div>
                       {pendingCommitments.length > 3 ? (
-                        <p className="mt-3 text-small text-ink-muted">
-                          {pendingCommitments.length - 3} komitmen lain belum ditampilkan.
-                        </p>
+                        <Link
+                          href="/dashboard/komitmen"
+                          className={`${LINK} mt-3 inline-block text-small`}
+                        >
+                          Lihat {pendingCommitments.length - 3} komitmen lainnya
+                        </Link>
                       ) : null}
                     </>
                   )}
@@ -891,29 +830,7 @@ export async function DashboardContent() {
         </div>
 
         {/* Phone shell: the canvas scrolls above this bar, never underneath it. */}
-        <nav
-          aria-label="Navigasi seluler"
-          className="shrink-0 border-t border-gold/35 bg-pearl shadow-nav lg:hidden"
-        >
-          <ul className="flex px-3">
-            {NAV.map((item) => (
-              <li key={item.href} className="flex-1">
-                <a
-                  href={item.href}
-                  aria-current={item.current ? "page" : undefined}
-                  className={`flex h-14 flex-col items-center justify-center gap-0.5 ${
-                    item.current ? "text-emerald" : "text-ink-muted"
-                  }`}
-                >
-                  <Icon name={item.icon} className="h-5 w-5" />
-                  <span className={`text-xs ${item.current ? "font-semibold" : ""}`}>
-                    {item.label}
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        <DashboardMobileNav active="overview" />
       </div>
     </div>
   );

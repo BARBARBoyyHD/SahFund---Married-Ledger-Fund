@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 
+import { DIALOG_CLASS, DialogHeading } from "@/components/app/dialog";
 import { BUTTON_SMALL } from "@/components/app/ui";
 import { DetailsForm } from "./details-form";
 import { Icon } from "./icons";
@@ -74,7 +75,7 @@ export function DashboardActions({
       <dialog
         ref={manualDialog}
         aria-labelledby="transaksi-baru-judul"
-        className="modal w-[min(92vw,34rem)] max-h-[85svh] overflow-y-auto rounded-md border border-gold/60 bg-surface p-6 text-ink shadow-card"
+        className={DIALOG_CLASS}
         onClick={closeOnBackdrop}
       >
         <DialogHeading
@@ -97,7 +98,7 @@ export function DashboardActions({
       <dialog
         ref={inviteDialog}
         aria-labelledby="undangan-judul"
-        className="modal w-[min(92vw,34rem)] max-h-[85svh] overflow-y-auto rounded-md border border-gold/60 bg-surface p-6 text-ink shadow-card"
+        className={DIALOG_CLASS}
         onClick={closeOnBackdrop}
       >
         <DialogHeading
@@ -123,7 +124,7 @@ export function DashboardActions({
       <dialog
         ref={settingsDialog}
         aria-labelledby="pengaturan-judul"
-        className="modal w-[min(92vw,34rem)] max-h-[85svh] overflow-y-auto rounded-md border border-gold/60 bg-surface p-6 text-ink shadow-card"
+        className={DIALOG_CLASS}
         onClick={closeOnBackdrop}
       >
         <DialogHeading
@@ -141,36 +142,5 @@ export function DashboardActions({
         </div>
       </dialog>
     </>
-  );
-}
-
-function DialogHeading({
-  id,
-  title,
-  description,
-  onClose,
-}: {
-  id: string;
-  title: string;
-  description: string;
-  onClose: () => void;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h2 id={id} className="text-h3 font-bold text-ink">
-          {title}
-        </h2>
-        <p className="mt-1 text-small text-ink-muted">{description}</p>
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Tutup"
-        className="-mr-2 -mt-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-ink-muted transition-colors hover:bg-emerald-soft hover:text-emerald"
-      >
-        <Icon name="close" className="h-5 w-5" />
-      </button>
-    </div>
   );
 }

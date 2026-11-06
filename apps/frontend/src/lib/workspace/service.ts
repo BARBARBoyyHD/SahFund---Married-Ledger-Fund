@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { generatePocketCode } from "../../core/pocket-code.ts";
 import { INVITE_LIMIT, allowAttempt } from "../auth/rate-limit.ts";
 import { classifyError, type Db } from "../db/index.ts";
-import { members, workspaces } from "../db/schema.ts";
+import { categories, members, workspaces } from "../db/schema.ts";
 import { sendInviteEmail, type MailConfig } from "../mail.ts";
+import { seedCategoryRows } from "./categories.ts";
 import type { CreateWorkspaceData, UpdateWorkspaceDetailsData } from "./schema.ts";
 
 /**
@@ -31,7 +32,8 @@ export async function createWorkspace(
     const inviteCode = generatePocketCode();
 
     try {
-      // One atomic batch: a refused membership leaves no orphan workspace (AGENTS §2).
+      // One atomic batch: a refused membership leaves no orphan workspace, and a new
+      // workspace always has its ten seeded categories (AGENTS §2, US-22/BRD FR-06).
       await db.batch([
         db.insert(workspaces).values({
           id,
@@ -42,6 +44,7 @@ export async function createWorkspace(
           inviteCode,
         }),
         db.insert(members).values({ workspaceId: id, userId, role: "owner" }),
+        db.insert(categories).values(seedCategoryRows(id)),
       ]);
       return { ok: true, id, inviteCode };
     } catch (error) {

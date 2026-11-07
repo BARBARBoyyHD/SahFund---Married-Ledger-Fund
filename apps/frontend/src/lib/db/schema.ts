@@ -203,6 +203,9 @@ export const imports = sqliteTable(
     reconciled: integer({ mode: "boolean" }).notNull(),
     // Whole-row reads only — no JSON path operators (rule P6, SPEC §10 E6).
     issues: text({ mode: "json" }).notNull(),
+    // US-17: a flagged import (reconciled = false) is left out of trusted totals until
+    // the user confirms it; this timestamp is that confirmation. NULL = not confirmed.
+    confirmedAt: integer({ mode: "timestamp_ms" }),
     createdAt: integer({ mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -262,6 +265,83 @@ export const commitments = sqliteTable(
 );
 
 /**
+ * Owner-issued read-only report links (BRD FR-11, US-32–34). Revoke sets
+ * `revokedAt` and every `/r/:token` resolve checks expiry *and* the flag, so a
+ * revoke takes effect on the next request without a session lookup.
+ * The token is 128-bit+ app-side randomness (rule P6) — never `gen_random_uuid()`.
+ */
+export const shareTokens = sqliteTable(
+  "share_tokens",
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    workspaceId: text()
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    token: text().notNull().unique(),
+    expiresAt: integer({ mode: "timestamp_ms" }).notNull(),
+    revokedAt: integer({ mode: "timestamp_ms" }),
+    createdAt: integer({ mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index("share_tokens_workspace_idx").on(t.workspaceId)],
+);
+
+/**
+ * Payee → category rules from user corrections, applied on future imports only
+ * (US-23, design decision 4) — stored rows are never rewritten by a rule change.
+ * UNIQUE (workspaceId, payee) makes the set a map: accepting a second correction
+ * for a known payee conflicts on the index, so the handler upserts instead.
+ * SET NULL: deleting a category keeps the payee fact; the handler re-prompts.
+ */
+export const payeeRules = sqliteTable(
+  "payee_rules",
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    workspaceId: text()
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    payee: text().notNull(),
+    categoryId: text().references(() => categories.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    unique("payee_rules_workspace_payee_unique").on(t.workspaceId, t.payee),
+  ],
+);
+
+/**
+ * One row per completed one-time purchase (design D1, US-37): the entitlement is
+ * keyed by order id so a retried webhook or a duplicate grant is a no-op on the
+ * unique index, never a second unlock. Gating is "a grant exists for this
+ * workspace", and the payment mechanism stays outside this table (Appendix B-3).
+ */
+export const entitlementGrants = sqliteTable(
+  "entitlement_grants",
+  {
+    id: text()
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    workspaceId: text()
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    // At most one grant per order — the whole idempotency guarantee (AGENTS §3).
+    orderId: text().notNull(),
+    createdAt: integer({ mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [
+    unique("entitlement_grants_order_unique").on(t.orderId),
+    // The gate is a point lookup by workspace (free vs paid), one row per purchase.
+    index("entitlement_grants_workspace_idx").on(t.workspaceId),
+  ],
+);
+
+/**
  * Keyed fixed-window counters (brainstorm 2026-11-05 §2.4). No FK: the key is an
  * opaque prefixed string — `ip:…`, `guest:…`, `user:…`, `ws:…` — because the table
  * must work before a session exists.
@@ -311,3 +391,6 @@ export type Category = typeof categories.$inferSelect;
 export type Import = typeof imports.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Commitment = typeof commitments.$inferSelect;
+export type ShareToken = typeof shareTokens.$inferSelect;
+export type PayeeRule = typeof payeeRules.$inferSelect;
+export type EntitlementGrant = typeof entitlementGrants.$inferSelect;

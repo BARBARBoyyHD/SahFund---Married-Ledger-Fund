@@ -27,6 +27,11 @@ export function unauthenticated() {
   );
 }
 
+/** 403 when a free workspace hits a paid-only action; the UI renders `message` verbatim. */
+export function locked(message: string) {
+  return NextResponse.json({ message }, { status: 403 });
+}
+
 /** 503 when the database or another dependency is unavailable — never a blank screen. */
 export function unavailable() {
   return NextResponse.json(

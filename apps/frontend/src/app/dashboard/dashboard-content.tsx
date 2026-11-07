@@ -230,7 +230,7 @@ export async function DashboardContent() {
   const lastImport = importRows[0];
 
   return (
-    <div className="flex h-svh flex-col bg-pearl text-ink [--focus-ring:var(--color-emerald)] lg:h-auto lg:min-h-svh lg:flex-row">
+    <div className="flex h-dvh flex-col bg-pearl text-ink [--focus-ring:var(--color-emerald)] lg:h-auto lg:min-h-svh lg:flex-row">
       <a
         href="#konten"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-surface focus:px-4 focus:py-2 focus:text-small focus:font-bold focus:text-ink"
@@ -247,7 +247,7 @@ export async function DashboardContent() {
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto lg:overflow-visible">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:overflow-visible">
           {/* Page title row: on the pearl ground, no bar or frosted header. */}
           <header id="overview" className="mx-auto w-full max-w-[1200px] scroll-mt-6 px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">
             <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">

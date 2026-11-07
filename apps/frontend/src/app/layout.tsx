@@ -21,8 +21,14 @@ export const metadata: Metadata = {
 /**
  * The `js` class arms the reveal transitions (globals.css) before first paint, so sections
  * never flash their finished state first. Without script the page is simply visible.
+ * The same pre-paint pass restores the collapsed dashboard sidebar before hydration.
  */
 const ARM_REVEAL = `document.documentElement.classList.add('js');
+try {
+  if (localStorage.getItem('sahfund.sidebar') === 'collapsed') {
+    document.documentElement.dataset.sidebar = 'collapsed';
+  }
+} catch (e) {}
 setTimeout(function () {
   if (!document.documentElement.classList.contains('revealed')) {
     document.documentElement.classList.remove('js');

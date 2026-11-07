@@ -99,7 +99,7 @@ export function BudgetAction({
       <button
         type="button"
         aria-haspopup="dialog"
-        aria-label={`Atur anggaran ${categoryName}`}
+        aria-label={`Ubah anggaran ${categoryName}`}
         className={BUTTON_SMALL}
         onClick={open}
       >
@@ -118,7 +118,7 @@ export function BudgetAction({
         <DialogHeading
           id={`${inputId}-judul`}
           title={`Anggaran ${categoryName}`}
-          description="Anggaran kategori ini menjadi pembanding realisasi di laporan. Kosongkan untuk menghapus anggarannya."
+          description="Anggaran kategori ini menjadi pembanding DP/pelunasan komitmennya di laporan. Kosongkan untuk menghapus anggarannya."
           onClose={() => dialog.current?.close()}
         />
 

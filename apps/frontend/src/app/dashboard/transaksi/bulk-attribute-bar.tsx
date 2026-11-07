@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { FormMessage, inputClass } from "@/components/app/form";
 import { BUTTON_PRIMARY } from "@/components/landing/ui";
@@ -9,6 +9,21 @@ import { BUTTON_PRIMARY } from "@/components/landing/ui";
 type Outcome = { updated: string[]; notFound: string[] };
 
 type ResponseBody = Partial<Outcome> & { message?: string };
+
+/** The row checkboxes: server-rendered in the table, joined to this form by `form`. */
+const rowCheckboxes = () =>
+  document.querySelectorAll<HTMLInputElement>('#daftar-transaksi-tabel input[name="ids"]');
+
+/** Counts checked rows and keeps select-all honest about a partial selection. */
+function selectionState(selectAll: HTMLInputElement | null): number {
+  const boxes = rowCheckboxes();
+  let checked = 0;
+  boxes.forEach((box) => {
+    if (box.checked) checked += 1;
+  });
+  if (selectAll) selectAll.indeterminate = checked > 0 && checked < boxes.length;
+  return checked;
+}
 
 /**
  * US-24: one action for a whole selection. The checkboxes live in the server-rendered
@@ -28,27 +43,41 @@ export function BulkAttributeBar({
 }) {
   const router = useRouter();
   const selectAll = useRef<HTMLInputElement>(null);
+  const [selected, setSelected] = useState(0);
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
 
-  function rowCheckboxes() {
-    return document.querySelectorAll<HTMLInputElement>(
-      '#daftar-transaksi-tabel input[name="ids"]',
-    );
+  function syncSelection() {
+    setSelected(selectionState(selectAll.current));
   }
+
+  // The row checkboxes are not React children of this component, so their change
+  // events only reach us at document level. Counting here also announces the
+  // selection through the live region below.
+  useEffect(() => {
+    function onChange(event: Event) {
+      if (event.target instanceof HTMLInputElement && event.target.name === "ids") {
+        setSelected(selectionState(selectAll.current));
+      }
+    }
+    document.addEventListener("change", onChange);
+    return () => document.removeEventListener("change", onChange);
+  }, []);
 
   function clearSelection() {
     rowCheckboxes().forEach((box) => {
       box.checked = false;
     });
     if (selectAll.current) selectAll.current.checked = false;
+    syncSelection();
   }
 
   function toggleAll(event: React.ChangeEvent<HTMLInputElement>) {
     rowCheckboxes().forEach((box) => {
       box.checked = event.target.checked;
     });
+    syncSelection();
   }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -148,8 +177,10 @@ export function BulkAttributeBar({
           Pilih semua di halaman ini
         </label>
 
-        <p className="w-full text-small text-ink-muted sm:w-auto">
-          Pilih baris lewat kotak centang, lalu tentukan anggotanya.
+        <p className="w-full text-small text-ink-muted sm:w-auto" aria-live="polite">
+          {selected > 0
+            ? `${selected} transaksi dipilih.`
+            : "Pilih baris lewat kotak centang, lalu tentukan anggotanya."}
         </p>
       </form>
 

@@ -321,7 +321,7 @@ Notes:
 
 ## 9. Epic E5 — Ledger & Manual Entry
 
-### US-18 — Browse the ledger
+### US-18 — Browse the ledger ✅
 
 **As a** member, **I want** to browse all transactions chronologically, **so that** I can see where the money went.
 
@@ -331,7 +331,7 @@ Notes:
 
 **Source:** BRD §4 FR-05; performance/rendering per AGENTS.md §6.
 
-### US-19 — Filter and search the ledger
+### US-19 — Filter and search the ledger ✅
 
 **As a** member, **I want** to filter by date range, category, member, and direction, and search by keyword, **so that** I can answer "how much did we spend on catering?" quickly.
 
@@ -341,7 +341,9 @@ Notes:
 
 **Source:** BRD §4 FR-05 (query parameters); URL-as-state per AGENTS.md §6.
 
-### US-20 — Re-categorise or reassign a transaction
+- **Known edge case (walkthrough, 2026-11-08):** the keyword is passed to SQL `LIKE` unescaped, so a literal `%` or `_` typed in the search box acts as a wildcard (`src/lib/ledger/list.ts:93` carries the `shortcut:` note). Filters, ordering, pagination and URL round-tripping themselves are verified in `listTransactions`.
+
+### US-20 — Re-categorise or reassign a transaction ✅
 
 **As a** member, **I want** to correct a transaction's category or attributed member, **so that** one mis-parsed row does not distort a report.
 
@@ -351,7 +353,9 @@ Notes:
 
 **Source:** BRD §4 FR-05 (PATCH), FR-06 (correction offered as rule).
 
-### US-21 — Add a manual transaction (cash and other-bank payments)
+- **Gap (walkthrough, 2026-11-08):** AC3 is not implemented — a category correction is never offered as a payee rule, because US-23 is deferred (openspec task 4.7, PEP §10 cut candidate #4, owner decision). AC1 (imported rows: category/member only, recomputed on refresh) and AC2 (member change flows into the contribution aggregate) are met.
+
+### US-21 — Add a manual transaction (cash and other-bank payments) ✅
 
 **As a** member, **I want** to record cash expenses and payments made outside the imported statement, **so that** the ledger reflects reality even though no bank API exists.
 
@@ -361,11 +365,13 @@ Notes:
 
 **Source:** BRD §4 FR-05 (POST manual, field defaults); dedupe for manual entry per AGENTS.md §7.
 
+- **Gap (walkthrough, 2026-11-08):** AC2 holds only for manual-vs-manual. The pinned tuple is `date | time | amountMinor | balanceMinor | ref`; a manual row stores `time = ""`, `balanceMinor = 0`, `ref = ""`, while an imported row carries the statement's time, printed balance and reference. So a manual row "identical" to an imported one (same date + amount) produces a different hash and **is stored as a second row** instead of being refused. The opposite also holds: two manual rows with the same date + amount but different descriptions *do* collide (no row is lost, but the second has to change its date/amount). Both directions are the documented tuple shortcut in `src/lib/ledger/service.ts:88`; integration coverage is manual↔manual (`test/integration/reporting.test.ts`).
+
 ---
 
 ## 10. Epic E6 — Categories & Rules
 
-### US-22 — Start with a seeded Indonesian wedding category set
+### US-22 — Start with a seeded Indonesian wedding category set ✅
 
 **As a** partner creating a workspace, **I want** sensible wedding categories from day one, **so that** I am not staring at an empty taxonomy.
 
@@ -373,6 +379,8 @@ Notes:
 - **Given** the seeded categories, **When** I rename or add a category, **Then** names remain unique within the workspace (a duplicate name is rejected with a clear message).
 
 **Source:** BRD §4 FR-06; uniqueness per AGENTS.md §3.
+
+- **Gap (walkthrough, 2026-11-08):** the ten seeded categories are created with the workspace (integration-tested). Uniqueness is enforced by `UNIQUE (workspaceId, name)` and mapped to the clear 409 message — but only on the rename path (`PATCH /api/workspaces/:id/categories/:categoryId`); there is **no UI to rename a category and no endpoint or UI to add one**, so AC2's "rename or add" is reachable through the API only, not for an end user in this change.
 
 ### US-23 — Turn a category correction into a payee rule
 
@@ -388,7 +396,7 @@ Notes:
 
 ## 11. Epic E7 — Reporting & Forecast
 
-### US-24 — Bulk-attribute transactions to a partner
+### US-24 — Bulk-attribute transactions to a partner ✅
 
 **As a** member, **I want** to assign a member to many rows at once ("these 12 deposits are Ayu's"), **so that** attribution does not take an hour of clicking.
 
@@ -397,7 +405,7 @@ Notes:
 
 **Source:** BRD §4 FR-07.
 
-### US-25 — See per-member contributions
+### US-25 — See per-member contributions ✅
 
 **As a** member (or the owner presenting to family), **I want** money in, money out, and net position per partner, **so that** "who put in what" is settled by data, not memory.
 
@@ -406,7 +414,7 @@ Notes:
 
 **Source:** BRD §4 FR-07; exactness per BRD §5 NFR-03.
 
-### US-26 — Set per-category budgets
+### US-26 — Set per-category budgets ✅
 
 **As a** member, **I want** to set a budget for each category, **so that** spending has a ceiling to compare against.
 
@@ -415,7 +423,7 @@ Notes:
 
 **Source:** BRD §3 In Scope ("Categories with per-category budgets"), BRD §4 FR-08.
 
-### US-27 — Read the budget-vs-actual report
+### US-27 — Read the budget-vs-actual report ✅
 
 **As a** member, **I want** budget, committed, paid, and remaining per category plus a totals row, **so that** I know where we stand without opening a spreadsheet.
 
@@ -425,7 +433,9 @@ Notes:
 
 **Source:** BRD §4 FR-08, BRD §9 report wireframe.
 
-### US-28 — Add a vendor commitment (DP and pelunasan)
+- **Interpretation gap (walkthrough, 2026-11-08):** the four figures are present and over-budget is rendered unclamped (`+Rp …`), totals included. But "Terbayar" is the DP/pelunasan recorded on **vendor commitments only** — ledger spend per category is *not* in this table (it lives in the contribution report, and the report copy says so twice). BRD FR-08 does not define "paid", so this is a decision, not a bug: the consequence is that a category can be over its budget in actual money out while this table still shows a positive "Sisa", as long as no commitment payment was recorded for it. Needs an owner call on whether FR-08's "paid" means commitment payments or actual ledger spend.
+
+### US-28 — Add a vendor commitment (DP and pelunasan) ✅
 
 **As a** member, **I want** to record a vendor contract with total, DP paid, and due date, **so that** future obligations are counted even before money moves.
 
@@ -443,7 +453,7 @@ Notes:
 
 **Source:** BRD §4 FR-09 ("dashboard lists the next due dates").
 
-### US-30 — Surface payments counted twice
+### US-30 — Surface payments counted twice ✅
 
 **As a** member, **I want** a payment that appears both as a ledger transaction and as commitment `paid` to be visibly reconciled, **so that** my totals are never double-counted.
 
@@ -451,6 +461,8 @@ Notes:
 - **Given** the surfaced duplication, **When** I review it, **Then** the report state makes clear which figure is included in totals.
 
 **Source:** BRD §4 FR-09 ("must be visibly reconciled"). Exact UX undefined — see Appendix B-2.
+
+- **Limitation (walkthrough, 2026-11-08):** the notice appears in the report and states which figure counts (Terbayar from commitments; the matching ledger row stays out of that column). The matcher compares the commitment's running `paid` **total** against a single ledger money-out row of the same magnitude, with an unbounded date window because commitments store no payment date. So it produces both false positives (any same-amount payment in the ledger) and false negatives (a contract paid in two instalments matches neither). It is a suggestion only — nothing is merged, adjusted or dropped silently.
 
 ### US-31 — Get the funded-or-shortfall forecast ✅
 
@@ -466,7 +478,7 @@ Notes:
 
 ## 12. Epic E8 — Share Report
 
-### US-32 — Create a read-only share link
+### US-32 — Create a read-only share link ✅
 
 **As a** workspace owner, **I want** to generate an expiring, revocable read-only link, **so that** family or the wedding organizer can see progress without an account.
 
@@ -475,7 +487,9 @@ Notes:
 
 **Source:** BRD §4 FR-11, BRD §3 In Scope. Default TTL undefined — see Appendix B-4.
 
-### US-33 — View a shared report without an account
+- **Verification (walkthrough, 2026-11-08):** owner-only create confirmed on both layers (403 for a member or non-member in `share-tokens/route.ts`; the section is only rendered for `role === "owner"`), 30-day expiry from `share/token.ts`, URL returned as `/r/:token`. Token lifecycle is integration-tested; the browser flow was not driven live.
+
+### US-33 — View a shared report without an account ✅
 
 **As a** family member or wedding organizer (shared viewer), **I want** to open the link and read the report, **so that** I can follow the budget without being given a login.
 
@@ -485,7 +499,9 @@ Notes:
 
 **Source:** BRD §4 FR-11.
 
-### US-34 — Revoke a share link
+- **Verification (walkthrough, 2026-11-08):** code-path verified — no session anywhere on `/r/:token`, no `transactions.description`, no member or row ids in any shared-page query, and the page is read-only (no form, no mutation handler). Unknown / expired / revoked all return the same `ShareUnavailable` page (`resolve-token.ts`). Live smoke from this environment was blocked: `next dev` cannot resolve the Cloudflare D1 binding without `CLOUDFLARE_API_TOKEN`, so `/r/not-a-token` streamed the shell and then hit its error boundary; the prior round's live smoke is the browser-level evidence.
+
+### US-34 — Revoke a share link ✅
 
 **As a** workspace owner, **I want** to revoke a share link, **so that** access ends the moment I say so.
 

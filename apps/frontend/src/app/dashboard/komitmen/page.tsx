@@ -21,7 +21,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 /**
- * US-28/US-29: the full commitment list. Bounded (vendor contracts per wedding), scoped
+ * US-28/US-29: the full commitment list. Not paginated — vendor contracts per wedding
+ * are a bounded set, and a silent `limit` would under-count the list it prints. Scoped
  * by the caller's workspace, category names joined in the same query — no N+1. Rows
  * without a due date stay visible, ordered last, so they never break the list.
  */
@@ -57,8 +58,7 @@ async function KomitmenContent() {
       .from(commitments)
       .leftJoin(categories, eq(commitments.categoryId, categories.id))
       .where(eq(commitments.workspaceId, workspace.workspaceId))
-      .orderBy(asc(commitments.dueOn))
-      .limit(100),
+      .orderBy(asc(commitments.dueOn)),
     db
       .select({ id: categories.id, name: categories.name })
       .from(categories)

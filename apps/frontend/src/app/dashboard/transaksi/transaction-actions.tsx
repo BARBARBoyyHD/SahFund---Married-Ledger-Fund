@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DIALOG_CLASS, DialogHeading } from "@/components/app/dialog";
 import { Field, FormMessage, describedBy, inputClass } from "@/components/app/form";
@@ -78,6 +78,10 @@ export function TransactionActions({
   const [pending, setPending] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Dialog bodies mount only while open: the ledger renders 50 rows, and 50 hidden
+  // forms would ship ~400 inputs to every visitor (AGENTS §6, client JS budget).
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const fieldId = (field: EditField) => `edit-${transaction.id}-${field}`;
 
@@ -85,17 +89,27 @@ export function TransactionActions({
     if (event.target === event.currentTarget) event.currentTarget.close();
   }
 
+  // Show after the body has rendered, so the browser's initial focus lands on the
+  // first field instead of an empty dialog.
+  useEffect(() => {
+    if (editOpen) editDialog.current?.showModal();
+  }, [editOpen]);
+
+  useEffect(() => {
+    if (deleteOpen) deleteDialog.current?.showModal();
+  }, [deleteOpen]);
+
   function openEdit() {
     // Re-sync from the (possibly refreshed) row before every open.
     setValues(initialValues(transaction));
     setErrors({});
     setMessage(null);
-    editDialog.current?.showModal();
+    setEditOpen(true);
   }
 
   function openDelete() {
     setDeleteMessage(null);
-    deleteDialog.current?.showModal();
+    setDeleteOpen(true);
   }
 
   function focusFirstInvalid(next: FieldErrorMap) {
@@ -219,6 +233,7 @@ export function TransactionActions({
         aria-labelledby={`edit-${transaction.id}-judul`}
         className={DIALOG_CLASS}
         onClick={closeOnBackdrop}
+        onClose={() => setEditOpen(false)}
       >
         <DialogHeading
           id={`edit-${transaction.id}-judul`}
@@ -231,142 +246,144 @@ export function TransactionActions({
           onClose={() => editDialog.current?.close()}
         />
 
-        <form onSubmit={onSave} noValidate aria-busy={pending} className="mt-5">
-          <FormMessage message={message} />
+        {editOpen ? (
+          <form onSubmit={onSave} noValidate aria-busy={pending} className="mt-5">
+            <FormMessage message={message} />
 
-          {transaction.imported ? null : (
-            <>
-              <Field id={fieldId("occurredOn")} label="Tanggal" error={errors.occurredOn}>
-                <input
-                  id={fieldId("occurredOn")}
-                  name="occurredOn"
-                  type="date"
-                  value={values.occurredOn}
-                  onChange={(event) => set("occurredOn", event.target.value)}
-                  aria-invalid={Boolean(errors.occurredOn)}
-                  aria-describedby={describedBy(fieldId("occurredOn"), {
-                    error: errors.occurredOn,
-                  })}
-                  className={inputClass(errors.occurredOn)}
-                />
-              </Field>
+            {transaction.imported ? null : (
+              <>
+                <Field id={fieldId("occurredOn")} label="Tanggal" error={errors.occurredOn}>
+                  <input
+                    id={fieldId("occurredOn")}
+                    name="occurredOn"
+                    type="date"
+                    value={values.occurredOn}
+                    onChange={(event) => set("occurredOn", event.target.value)}
+                    aria-invalid={Boolean(errors.occurredOn)}
+                    aria-describedby={describedBy(fieldId("occurredOn"), {
+                      error: errors.occurredOn,
+                    })}
+                    className={inputClass(errors.occurredOn)}
+                  />
+                </Field>
 
-              <Field id={fieldId("description")} label="Deskripsi" error={errors.description}>
-                <input
-                  id={fieldId("description")}
-                  name="description"
-                  type="text"
-                  autoComplete="off"
-                  value={values.description}
-                  onChange={(event) => set("description", event.target.value)}
-                  aria-invalid={Boolean(errors.description)}
-                  aria-describedby={describedBy(fieldId("description"), {
-                    error: errors.description,
-                  })}
-                  className={inputClass(errors.description)}
-                />
-              </Field>
+                <Field id={fieldId("description")} label="Deskripsi" error={errors.description}>
+                  <input
+                    id={fieldId("description")}
+                    name="description"
+                    type="text"
+                    autoComplete="off"
+                    value={values.description}
+                    onChange={(event) => set("description", event.target.value)}
+                    aria-invalid={Boolean(errors.description)}
+                    aria-describedby={describedBy(fieldId("description"), {
+                      error: errors.description,
+                    })}
+                    className={inputClass(errors.description)}
+                  />
+                </Field>
 
-              <Field
-                id={fieldId("direction")}
-                label="Jenis transaksi"
-                hint="Uang masuk menambah saldo; uang keluar mengurangi."
-                error={errors.direction}
-              >
-                <select
+                <Field
                   id={fieldId("direction")}
-                  name="direction"
-                  value={values.direction}
-                  onChange={(event) =>
-                    set("direction", event.target.value as "in" | "out")
-                  }
-                  aria-invalid={Boolean(errors.direction)}
-                  aria-describedby={describedBy(fieldId("direction"), {
-                    hint: true,
-                    error: errors.direction,
-                  })}
-                  className={inputClass(errors.direction)}
+                  label="Jenis transaksi"
+                  hint="Uang masuk menambah saldo; uang keluar mengurangi."
+                  error={errors.direction}
                 >
-                  <option value="out">Uang keluar</option>
-                  <option value="in">Uang masuk</option>
-                </select>
-              </Field>
+                  <select
+                    id={fieldId("direction")}
+                    name="direction"
+                    value={values.direction}
+                    onChange={(event) =>
+                      set("direction", event.target.value as "in" | "out")
+                    }
+                    aria-invalid={Boolean(errors.direction)}
+                    aria-describedby={describedBy(fieldId("direction"), {
+                      hint: true,
+                      error: errors.direction,
+                    })}
+                    className={inputClass(errors.direction)}
+                  >
+                    <option value="out">Uang keluar</option>
+                    <option value="in">Uang masuk</option>
+                  </select>
+                </Field>
 
-              <Field
-                id={fieldId("amount")}
-                label="Nominal"
-                hint="Tulis angka rupiah tanpa tanda minus, misalnya 250.000."
-                error={errors.amount}
-              >
-                <input
+                <Field
                   id={fieldId("amount")}
-                  name="amount"
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  value={values.amount}
-                  onChange={(event) => set("amount", event.target.value)}
-                  aria-invalid={Boolean(errors.amount)}
-                  aria-describedby={describedBy(fieldId("amount"), {
-                    hint: true,
-                    error: errors.amount,
-                  })}
-                  className={inputClass(errors.amount)}
-                />
-              </Field>
-            </>
-          )}
+                  label="Nominal"
+                  hint="Tulis angka rupiah tanpa tanda minus, misalnya 250.000."
+                  error={errors.amount}
+                >
+                  <input
+                    id={fieldId("amount")}
+                    name="amount"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={values.amount}
+                    onChange={(event) => set("amount", event.target.value)}
+                    aria-invalid={Boolean(errors.amount)}
+                    aria-describedby={describedBy(fieldId("amount"), {
+                      hint: true,
+                      error: errors.amount,
+                    })}
+                    className={inputClass(errors.amount)}
+                  />
+                </Field>
+              </>
+            )}
 
-          <Field id={fieldId("categoryId")} label="Kategori" error={errors.categoryId}>
-            <select
-              id={fieldId("categoryId")}
-              name="categoryId"
-              value={values.categoryId ?? ""}
-              onChange={(event) => set("categoryId", event.target.value)}
-              aria-invalid={Boolean(errors.categoryId)}
-              aria-describedby={describedBy(fieldId("categoryId"), {
-                error: errors.categoryId,
-              })}
-              className={inputClass(errors.categoryId)}
+            <Field id={fieldId("categoryId")} label="Kategori" error={errors.categoryId}>
+              <select
+                id={fieldId("categoryId")}
+                name="categoryId"
+                value={values.categoryId ?? ""}
+                onChange={(event) => set("categoryId", event.target.value)}
+                aria-invalid={Boolean(errors.categoryId)}
+                aria-describedby={describedBy(fieldId("categoryId"), {
+                  error: errors.categoryId,
+                })}
+                className={inputClass(errors.categoryId)}
+              >
+                <option value="">Tanpa kategori</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field id={fieldId("memberId")} label="Anggota" error={errors.memberId}>
+              <select
+                id={fieldId("memberId")}
+                name="memberId"
+                value={values.memberId ?? ""}
+                onChange={(event) => set("memberId", event.target.value)}
+                aria-invalid={Boolean(errors.memberId)}
+                aria-describedby={describedBy(fieldId("memberId"), {
+                  error: errors.memberId,
+                })}
+                className={inputClass(errors.memberId)}
+              >
+                <option value="">Tanpa anggota</option>
+                {members.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <button
+              type="submit"
+              disabled={pending}
+              className={`${BUTTON_PRIMARY} w-full disabled:pointer-events-none disabled:bg-emerald-soft disabled:text-ink-muted disabled:shadow-none`}
             >
-              <option value="">Tanpa kategori</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field id={fieldId("memberId")} label="Anggota" error={errors.memberId}>
-            <select
-              id={fieldId("memberId")}
-              name="memberId"
-              value={values.memberId ?? ""}
-              onChange={(event) => set("memberId", event.target.value)}
-              aria-invalid={Boolean(errors.memberId)}
-              aria-describedby={describedBy(fieldId("memberId"), {
-                error: errors.memberId,
-              })}
-              className={inputClass(errors.memberId)}
-            >
-              <option value="">Tanpa anggota</option>
-              {members.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <button
-            type="submit"
-            disabled={pending}
-            className={`${BUTTON_PRIMARY} w-full disabled:pointer-events-none disabled:bg-emerald-soft disabled:text-ink-muted disabled:shadow-none`}
-          >
-            {pending ? "Menyimpan…" : "Simpan perubahan"}
-          </button>
-        </form>
+              {pending ? "Menyimpan…" : "Simpan perubahan"}
+            </button>
+          </form>
+        ) : null}
       </dialog>
 
       <dialog
@@ -374,6 +391,7 @@ export function TransactionActions({
         aria-labelledby={`delete-${transaction.id}-judul`}
         className={DIALOG_CLASS}
         onClick={closeOnBackdrop}
+        onClose={() => setDeleteOpen(false)}
       >
         <DialogHeading
           id={`delete-${transaction.id}-judul`}
@@ -381,27 +399,31 @@ export function TransactionActions({
           description={`${formatDate(transaction.occurredOn)} · ${transaction.description} · ${formatRupiah(transaction.amountMinor)}`}
           onClose={() => deleteDialog.current?.close()}
         />
-        <p className="mt-4 text-small text-ink-muted">
-          Transaksi yang dihapus tidak bisa dikembalikan. Saldo dan laporan ikut berubah.
-        </p>
-        <FormMessage message={deleteMessage} />
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            className={BUTTON_SMALL}
-            onClick={() => deleteDialog.current?.close()}
-          >
-            Batal
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={deleting}
-            className="inline-flex h-10 items-center justify-center rounded-sm bg-danger px-4 text-small font-bold text-surface transition-colors hover:bg-danger/90 disabled:pointer-events-none disabled:opacity-60"
-          >
-            {deleting ? "Menghapus…" : "Hapus transaksi"}
-          </button>
-        </div>
+        {deleteOpen ? (
+          <>
+            <p className="mt-4 text-small text-ink-muted">
+              Transaksi yang dihapus tidak bisa dikembalikan. Saldo dan laporan ikut berubah.
+            </p>
+            <FormMessage message={deleteMessage} />
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                className={BUTTON_SMALL}
+                onClick={() => deleteDialog.current?.close()}
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                disabled={deleting}
+                className="inline-flex h-10 items-center justify-center rounded-sm bg-danger px-4 text-small font-bold text-surface transition-colors hover:bg-danger/90 disabled:pointer-events-none disabled:opacity-60"
+              >
+                {deleting ? "Menghapus…" : "Hapus transaksi"}
+              </button>
+            </div>
+          </>
+        ) : null}
       </dialog>
     </div>
   );

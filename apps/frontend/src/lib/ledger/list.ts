@@ -27,7 +27,7 @@ const keywordParam = z.preprocess(asParam, z.string().max(100).optional());
 const categoryParam = z.preprocess((value) => {
   const single = asParam(value);
   return single === undefined ? [] : single.split(",").map((id) => id.trim()).filter(Boolean);
-}, z.array(z.string().max(64)));
+}, z.array(z.string().max(64)).max(50));
 
 export const ledgerFilterSchema = z.object({
   dateFrom: dateParam,
@@ -69,6 +69,8 @@ export type LedgerRow = {
   categoryName: string | null;
   memberId: string | null;
   memberName: string | null;
+  /** Imported rows are only classification-editable; manual rows are fully editable. */
+  imported: boolean;
 };
 
 export type LedgerPage = {
@@ -110,6 +112,7 @@ export async function listTransactions(
         direction: transactions.direction,
         categoryId: transactions.categoryId,
         memberId: transactions.memberId,
+        importId: transactions.importId,
       })
       .from(transactions)
       .where(where)
@@ -151,10 +154,16 @@ export async function listTransactions(
 
   return {
     rows: rows.map((row) => ({
-      ...row,
+      id: row.id,
+      occurredOn: row.occurredOn,
+      description: row.description,
       amountMinor: toMinor(row.amountMinor),
+      direction: row.direction,
+      categoryId: row.categoryId,
       categoryName: row.categoryId === null ? null : (categoryNames.get(row.categoryId) ?? null),
+      memberId: row.memberId,
       memberName: row.memberId === null ? null : (memberNames.get(row.memberId) ?? null),
+      imported: row.importId !== null,
     })),
     total,
     page: pageNumber,

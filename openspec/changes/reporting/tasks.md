@@ -26,12 +26,12 @@
 - [x] 4.4 Contribution report (in/out/net, unattributed) and budget-vs-actual report (four figures + totals, over-budget mark, error state not zeros) — US-25, US-27
 - [x] 4.5 Budget inputs (IDR → minor units via money module) + commitments form (DP/pelunasan) — US-26, US-28
 - [x] 4.6 Duplicate-payment notice in report stating which figure counts — US-30
-- [ ] 4.7 Payee-rule offer accept/decline on correction + rules list/delete *(PEP §10 cut candidate #4 — defer first)* — US-23
-- [ ] 4.8 Share-link controls (owner-only, show expiry, revoke) + `/r/:token` read-only report (aggregates only) + unavailable page *(PEP §10 cut candidate #1 — defer second)* — US-32, US-33, US-34
+- [ ] 4.7 Payee-rule offer accept/decline on correction + rules list/delete *(PEP §10 cut candidate #4 — defer first)* — US-23 — **deferred per PEP §10 (owner decision)**
+- [x] 4.8 Share-link controls (owner-only, show expiry, revoke) + `/r/:token` read-only report (aggregates only) + unavailable page *(PEP §10 cut candidate #1 — defer second)* — US-32, US-33, US-34
 
 ## 5. States, a11y, verification
 
-- [ ] 5.1 Loading skeleton / empty / error+retry / success on every new screen; DB failure → US-43 error state, never zeros — US-27, US-50-adjacent
-- [ ] 5.2 Keyboard + WCAG 2.2 AA pass: labels, focus, ≥ 4.5:1 contrast, semantic table — US-49-adjacent
-- [ ] 5.3 Performance: filter/paginate verified in SQL (no fetch-all-then-slice), aggregates in SQL, no N+1 — AGENTS.md §4
-- [ ] 5.4 Typecheck + unit + integration tests green; manual walkthrough — US-18–22, US-24–28, US-30, US-32–34 marked ✅ or gaps listed in `docs/projects/USER-STORIES.md`
+- [x] 5.1 Loading skeleton / empty / error+retry / success on every new screen; DB failure → US-43 error state, never zeros — US-27, US-50-adjacent
+- [x] 5.2 Keyboard + WCAG 2.2 AA pass: labels, focus, ≥ 4.5:1 contrast, semantic table — US-49-adjacent
+- [x] 5.3 Performance: filter/paginate verified in SQL (no fetch-all-then-slice), aggregates in SQL, no N+1 — AGENTS.md §4
+- [x] 5.4 Typecheck + unit + integration tests green; manual walkthrough — US-18–22, US-24–28, US-30, US-32–34 marked ✅ or gaps listed in `docs/projects/USER-STORIES.md`

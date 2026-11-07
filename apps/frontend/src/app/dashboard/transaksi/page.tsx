@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
@@ -10,7 +10,7 @@ import { BUTTON_PRIMARY } from "@/components/landing/ui";
 import { jakartaDay } from "@/core/dashboard";
 import { formatDate, formatRupiah } from "@/core/money";
 import { getDb } from "@/lib/db";
-import { categories, members, transactions, user } from "@/lib/db/schema";
+import { categories, members, user } from "@/lib/db/schema";
 import {
   listTransactions,
   parseLedgerQuery,
@@ -68,22 +68,6 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
       .where(eq(members.workspaceId, workspaceId))
       .orderBy(desc(members.role)),
   ]);
-
-  // `listTransactions` does not expose `importId`, and imported rows are only
-  // classification-editable while manual rows stay fully editable (US-20).
-  // shortcut: a second scoped read for one page of ids; fold `importId` into
-  // `listTransactions` when that list grows another detail field.
-  const pageIds = ledger.rows.map((row) => row.id);
-  const flagRows =
-    pageIds.length === 0
-      ? []
-      : await db
-          .select({ id: transactions.id, importId: transactions.importId })
-          .from(transactions)
-          .where(
-            and(eq(transactions.workspaceId, workspaceId), inArray(transactions.id, pageIds)),
-          );
-  const importedById = new Map(flagRows.map((row) => [row.id, row.importId !== null]));
 
   const memberOptions = memberRows.map((member) => ({
     id: member.userId,
@@ -372,6 +356,9 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
                           </th>
                           <td className="max-w-[24ch] py-2.5 pr-3">
                             <span className="block truncate text-ink">{row.description}</span>
+                            <span className="block truncate text-small text-ink-muted sm:hidden">
+                              {row.categoryName ?? "Tanpa kategori"}
+                            </span>
                           </td>
                           <td className="hidden py-2.5 pr-3 text-ink-muted sm:table-cell">
                             {row.categoryName ?? "Tanpa kategori"}
@@ -414,7 +401,7 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
                                 direction: row.direction,
                                 categoryId: row.categoryId,
                                 memberId: row.memberId,
-                                imported: importedById.get(row.id) ?? false,
+                                imported: row.imported,
                               }}
                               categories={categoryRows}
                               members={memberOptions}
@@ -435,7 +422,7 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
 }
 
 const FILTER_CONTROL =
-  "h-11 w-full rounded-sm border border-gold-line bg-surface px-3 text-body text-ink outline-none transition-colors placeholder:text-ink-muted focus:border-emerald focus:ring-2 focus:ring-emerald/25";
+  "h-11 w-full rounded-sm border border-gold-line bg-surface px-3 text-body text-ink outline-none transition-colors placeholder:text-ink-muted focus:border-emerald focus:ring-2 focus:ring-emerald/60";
 
 /** Label + control; the id contract stays at the call site (`htmlFor`). */
 function FilterField({
@@ -467,7 +454,7 @@ function Pagination({
   page: number;
   pageCount: number;
 }) {
-  if (pageCount <= 1) return null;
+  if (pageCount <= 1 || page > pageCount) return null;
 
   return (
     <nav aria-label="Halaman transaksi" className="flex items-center gap-2">

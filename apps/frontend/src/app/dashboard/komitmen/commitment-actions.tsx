@@ -112,6 +112,11 @@ export function CommitmentSettlement({
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
 
+  function focusFirstInvalid(next: FieldErrors<UpdateCommitmentFormValues>) {
+    const first = (Object.keys(next) as (keyof typeof next)[]).find((field) => next[field]);
+    if (first) document.getElementById(`${prefix}-${first}`)?.focus();
+  }
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pending) return;
@@ -121,8 +126,7 @@ export function CommitmentSettlement({
     if (!parsed.success) {
       const next = fieldErrors<UpdateCommitmentFormValues>(parsed.error);
       setErrors(next);
-      const first = (Object.keys(next) as (keyof typeof next)[]).find((field) => next[field]);
-      if (first) document.getElementById(`${prefix}-${first}`)?.focus();
+      focusFirstInvalid(next);
       return;
     }
 
@@ -145,10 +149,12 @@ export function CommitmentSettlement({
       const body = (await response.json().catch(() => null)) as ResponseBody | null;
 
       if (!response.ok) {
-        setErrors(body?.fieldErrors ?? {});
+        const next = body?.fieldErrors ?? {};
+        setErrors(next);
         setMessage(
           typeof body?.message === "string" ? body.message : "Permintaan gagal. Coba lagi.",
         );
+        focusFirstInvalid(next);
         return;
       }
 

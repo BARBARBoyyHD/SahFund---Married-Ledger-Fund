@@ -5,18 +5,22 @@ import { Suspense } from "react";
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { PageSkeleton } from "@/components/app/skeleton";
 import { toMinor } from "@/core/dashboard";
-import { formatDate, formatRupiah } from "@/core/money";
+import { formatDate, formatInstantDate, formatRemaining, formatRupiah } from "@/core/money";
 import { getDb } from "@/lib/db";
 import { commitments, members, transactions, user } from "@/lib/db/schema";
+import { trustedTotalsCondition } from "@/lib/ledger/trusted";
 import {
   contributionReport,
   type ContributionLine,
 } from "@/lib/reports/contributions";
 import { budgetVsActualReport } from "@/lib/reports/budget-vs-actual";
 import { matchDuplicatePayments } from "@/lib/reports/duplicate-payments";
+import { listShareTokens } from "@/lib/share/manage";
+import { shareTokenState } from "@/lib/share/token";
 import { requireWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardShell } from "../dashboard-nav";
 import { BudgetAction } from "./budget-action";
+import { ShareLinks } from "./share-links";
 
 export const metadata: Metadata = { title: "Laporan" };
 
@@ -48,7 +52,7 @@ async function LaporanContent() {
   const db = getDb();
   const workspaceId = workspace.workspaceId;
 
-  const [contributionLines, budget, memberRows, paymentRows] = await Promise.all([
+  const [contributionLines, budget, memberRows, paymentRows, trusted] = await Promise.all([
     contributionReport(db, workspaceId),
     budgetVsActualReport(db, workspaceId),
     db
@@ -65,14 +69,33 @@ async function LaporanContent() {
       })
       .from(commitments)
       .where(eq(commitments.workspaceId, workspaceId)),
+    trustedTotalsCondition(db, workspaceId),
   ]);
+
+  /**
+   * US-32/34: owner-only share links. The row is read on the server and the client leaf
+   * only creates/revokes; `shareTokenState` is the same helper the API and `/r/:token`
+   * resolve use, so the badge can never disagree with what the link does.
+   */
+  const now = new Date();
+  const shareRows =
+    workspace.role === "owner"
+      ? (await listShareTokens(db, workspaceId)).map((row) => ({
+          id: row.id,
+          url: `/r/${row.token}`,
+          expiresAt: formatInstantDate(row.expiresAt),
+          status: shareTokenState(row, now),
+        }))
+      : [];
 
   /**
    * US-30. A commitment stores no payment date (only `total`, `paid`, `dueOn`), so the
    * matcher's date window is unbounded here and the comparison is equal-magnitude only —
    * a suggestion, never a merge. The ledger read is narrowed in SQL to the commitment
    * magnitudes (`inArray`, workspace-scoped), never the whole ledger; that set is bounded
-   * by the contract list, not by ledger size.
+   * by the contract list, not by ledger size. Rows from unconfirmed imports are excluded
+   * (`trusted`), because the notice tells the user the match counts in the contribution
+   * report — it only does if the row is in trusted totals.
    */
   const paidCommitments = paymentRows
     .map((row) => ({
@@ -97,12 +120,16 @@ async function LaporanContent() {
           .where(
             and(
               eq(transactions.workspaceId, workspaceId),
+              trusted,
               inArray(
                 transactions.amountMinor,
                 paidMagnitudes.map((amount) => BigInt(-amount)),
               ),
             ),
-          );
+          )
+          // The magnitude set is small, but a shared URL or a zero-value contract must
+          // never turn this read into an unbounded scan.
+          .limit(200);
 
   const duplicatePairs = matchDuplicatePayments(
     paidCommitments.map(({ commitmentId, amountMinor }) => ({
@@ -181,10 +208,13 @@ async function LaporanContent() {
 
           {!hasContributionData ? (
             <div className="mt-4 rounded-sm border border-dashed border-gold/40 px-4 py-6">
-              <p className="text-small font-semibold text-ink">Belum ada transaksi tercatat.</p>
+              <p className="text-small font-semibold text-ink">
+                Belum ada transaksi terverifikasi.
+              </p>
               <p className="mt-1 text-small text-ink-muted">
-                Impor mutasi rekening atau tambah transaksi manual; kontribusi tiap anggota
-                muncul setelah nominalnya tercatat dan anggotanya ditandai.
+                Transaksi dari impor yang belum cocok dengan saldo bank belum dihitung di
+                laporan ini. Impor mutasi rekening atau tambah transaksi manual, lalu tandai
+                anggotanya — kontribusinya muncul di sini.
               </p>
             </div>
           ) : (
@@ -279,12 +309,14 @@ async function LaporanContent() {
 
         <section aria-labelledby="anggaran-laporan-judul" className="panel-surface rounded-md p-6">
           <h2 id="anggaran-laporan-judul" className="text-h3 font-bold text-ink">
-            Anggaran vs realisasi
+            Anggaran vs komitmen vendor
           </h2>
           <p className="mt-1 text-small text-ink-muted">
-            Anggaran, komitmen vendor, yang sudah terbayar, dan sisanya per kategori.
-            Kategori yang lewat anggaran ditandai, bukan dinolkan. Anggaran tiap pos bisa
-            diatur langsung dari barisnya.
+            Anggaran, komitmen vendor, DP/pelunasan yang dicatat pada komitmen, dan sisanya
+            per kategori. Kolom Terbayar hanya berisi pembayaran yang dicatat di komitmen
+            vendor — mutasi bank di ledger tidak menambah kolom ini. Kategori yang lewat
+            anggaran ditandai, bukan dinolkan. Anggaran tiap pos bisa diatur langsung dari
+            barisnya.
           </p>
 
           {budget.rows.length === 0 ? (
@@ -360,7 +392,7 @@ async function LaporanContent() {
                           row.overBudget ? "text-danger" : "text-ink"
                         }`}
                       >
-                        {remainingLabel(row.remainingMinor, row.overBudget)}
+                        {formatRemaining(row.remainingMinor, row.overBudget)}
                       </td>
                       <td className="py-2.5 pl-3 text-right">
                         {row.categoryId === null ? null : (
@@ -394,7 +426,7 @@ async function LaporanContent() {
                         budget.totals.overBudget ? "text-danger" : "text-ink"
                       }`}
                     >
-                      {remainingLabel(budget.totals.remainingMinor, budget.totals.overBudget)}
+                      {formatRemaining(budget.totals.remainingMinor, budget.totals.overBudget)}
                     </td>
                     <td />
                   </tr>
@@ -412,9 +444,11 @@ async function LaporanContent() {
           </p>
 
           <p className="mt-3 text-small text-ink-muted">
-            Sisa = anggaran − terbayar. Komitmen adalah nilai kontrak vendor yang belum
-            tentu sudah keluar dari rekening. Kategori tanpa anggaran menampilkan “—”, bukan
-            nol.
+            Sisa = anggaran − terbayar. Terbayar hanya menghitung DP dan pelunasan yang
+            dicatat pada komitmen vendor; mutasi bank di ledger tidak menambah kolom ini
+            (transaksi itu tetap tampil di laporan kontribusi). Komitmen adalah nilai
+            kontrak vendor yang belum tentu sudah keluar dari rekening. Kategori tanpa
+            anggaran menampilkan “—”, bukan nol.
           </p>
         </section>
 
@@ -471,18 +505,22 @@ async function LaporanContent() {
             </ul>
           </section>
         )}
+
+        {workspace.role === "owner" ? (
+          <section aria-labelledby="bagikan-judul" className="panel-surface rounded-md p-6">
+            <h2 id="bagikan-judul" className="text-h3 font-bold text-ink">
+              Bagikan laporan
+            </h2>
+            <p className="mt-1 max-w-[75ch] text-small text-ink-muted">
+              Tautan hanya menampilkan angka ringkasan — total, anggaran per kategori, dan
+              forecast. Rincian transaksi dan data anggota tidak ikut dibagikan. Tautan
+              berlaku 30 hari dan bisa dicabut kapan saja; setelah dicabut, tautan langsung
+              tidak bisa dibuka.
+            </p>
+            <ShareLinks workspaceId={workspaceId} tokens={shareRows} />
+          </section>
+        ) : null}
       </main>
     </DashboardShell>
   );
-}
-
-/**
- * Remaining is never clamped: an over-budget category reads "+Rp 500.000" in danger
- * colour (spec: Over-budget is visible).
- */
-function remainingLabel(remainingMinor: number | null, overBudget: boolean): string {
-  if (remainingMinor === null) return "—";
-  return overBudget
-    ? `+${formatRupiah(Math.abs(remainingMinor))}`
-    : formatRupiah(remainingMinor);
 }

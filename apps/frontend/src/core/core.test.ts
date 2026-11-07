@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { forecast, monthsUntil } from "./forecast.ts";
-import { formatDate, formatRupiah, parseRupiahInput, parseRupiahMinor, rupiahToMinor } from "./money.ts";
+import {
+  formatDate,
+  formatInstantDate,
+  formatRemaining,
+  formatRupiah,
+  parseRupiahInput,
+  parseRupiahMinor,
+  rupiahToMinor,
+} from "./money.ts";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
@@ -14,6 +22,18 @@ test("formatRupiah groups in id-ID and keeps the sign", () => {
 test("formatDate renders a calendar date in id-ID without shifting the day", () => {
   assert.equal(formatDate("2027-06-03"), "3 Juni 2027");
   assert.equal(formatDate("2026-11-05"), "5 November 2026");
+});
+
+test("formatInstantDate renders an expiry instant as the Jakarta calendar day", () => {
+  // 18:00 UTC is already the next day in Jakarta (UTC+7) - the owner's date, not UTC's.
+  assert.equal(formatInstantDate(new Date("2026-12-08T18:00:00Z")), "9 Desember 2026");
+  assert.equal(formatInstantDate(new Date("2026-12-08T04:00:00Z")), "8 Desember 2026");
+});
+
+test("formatRemaining shows a blank for no budget and an unclamped over-budget sign", () => {
+  assert.equal(formatRemaining(null, false), "—");
+  assert.equal(formatRemaining(5000000, false), "Rp 50.000");
+  assert.equal(formatRemaining(-5000000, true), "+Rp 50.000");
 });
 
 test("rupiahToMinor never produces a fraction", () => {

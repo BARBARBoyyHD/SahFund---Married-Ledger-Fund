@@ -20,9 +20,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const access = await membershipForApi(id);
   if (!access.ok) return access.response;
 
-  const db = getDb();
-
   try {
+    const db = getDb();
     const gate = await exportGate(db, id);
     if (!gate.ok) return locked(gate.message);
 

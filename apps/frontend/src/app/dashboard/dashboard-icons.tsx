@@ -37,6 +37,18 @@ const PATHS = {
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,
+  collapse: (
+    <>
+      <path d="M11 17l-5-5 5-5" />
+      <path d="M18 17l-5-5 5-5" />
+    </>
+  ),
+  expand: (
+    <>
+      <path d="M13 17l5-5-5-5" />
+      <path d="M6 17l5-5-5-5" />
+    </>
+  ),
 } as const;
 
 export function Icon({

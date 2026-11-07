@@ -2,8 +2,9 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { daysUntil, jakartaDay } from "@/core/dashboard";
-import { Wordmark } from "@/components/mark";
+import { Mark } from "@/components/mark";
 import { Icon } from "./dashboard-icons";
+import { DashboardSidebarToggle } from "./dashboard-sidebar-toggle";
 
 /**
  * The dashboard chrome shared by `/dashboard` and its subpages. One nav list, so the
@@ -44,12 +45,26 @@ export function DashboardSidebar({
   const days = weddingDate ? daysUntil(weddingDate, jakartaDay(new Date())) : null;
 
   return (
-    <aside className="hidden w-60 shrink-0 flex-col gap-6 border-r border-gold/35 bg-pearl px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-svh">
-      <Link href="/dashboard" className="flex items-center gap-2.5 rounded-xs px-2">
-        <Wordmark />
-      </Link>
+    <aside
+      id="dashboard-sidebar"
+      className="dashboard-sidebar hidden w-60 shrink-0 flex-col gap-6 border-r border-gold/35 bg-pearl px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh"
+    >
+      <div className="flex flex-col gap-1">
+        <Link
+          href="/dashboard"
+          aria-label="SahFund — dashboard"
+          className="sidebar-center flex items-center gap-2.5 rounded-xs px-2"
+        >
+          <Mark size={28} />
+          <span className="sidebar-full-only text-h3 font-bold tracking-[-0.02em] text-ink">
+            SahFund
+          </span>
+        </Link>
 
-      <div className="card-sheen rounded-sm border border-gold/35 p-3">
+        <DashboardSidebarToggle />
+      </div>
+
+      <div className="sidebar-full-only card-sheen rounded-sm border border-gold/35 p-3">
         <div className="flex items-center gap-2.5">
           <span aria-hidden="true" className="relative flex shrink-0 -space-x-1.5">
             {members.slice(0, 2).map((member, index) => (
@@ -81,15 +96,16 @@ export function DashboardSidebar({
               <li key={item.key}>
                 <Link
                   href={item.href}
+                  aria-label={item.label}
                   aria-current={current ? "page" : undefined}
-                  className={`flex h-9 items-center gap-2.5 rounded-sm px-3 transition-colors ${
+                  className={`sidebar-center flex h-9 items-center gap-2.5 rounded-sm px-3 transition-colors ${
                     current
                       ? "bg-emerald font-semibold text-pearl"
                       : "text-ink-muted hover:bg-emerald-soft hover:text-emerald"
                   }`}
                 >
                   <Icon name={item.icon} className="h-4 w-4 shrink-0" />
-                  {item.label}
+                  <span className="sidebar-full-only">{item.label}</span>
                 </Link>
               </li>
             );
@@ -105,7 +121,7 @@ export function DashboardMobileNav({ active }: { active: DashboardSection }) {
   return (
     <nav
       aria-label="Navigasi seluler"
-      className="shrink-0 border-t border-gold/35 bg-pearl shadow-nav lg:hidden"
+      className="shrink-0 border-t border-gold/35 bg-pearl pb-[env(safe-area-inset-bottom)] shadow-nav lg:hidden"
     >
       <ul className="flex px-3">
         {NAV.map((item) => {
@@ -149,7 +165,7 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-svh flex-col bg-pearl text-ink [--focus-ring:var(--color-emerald)] lg:h-auto lg:min-h-svh lg:flex-row">
+    <div className="dashboard-shell flex flex-col bg-pearl text-ink [--focus-ring:var(--color-emerald)] lg:h-auto lg:min-h-svh lg:flex-row">
       <a
         href="#konten"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-surface focus:px-4 focus:py-2 focus:text-small focus:font-bold focus:text-ink"
@@ -165,7 +181,7 @@ export function DashboardShell({
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto lg:overflow-visible">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:overflow-visible">{children}</div>
         <DashboardMobileNav active={active} />
       </div>
     </div>

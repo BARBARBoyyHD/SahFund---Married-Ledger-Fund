@@ -16,7 +16,7 @@
 - [x] 3.2 PATCH transaction (category/member) + bulk-attribute handler: single `db.batch()`, per-row outcome reported (no silent partial) — US-20, US-24
 - [x] 3.3 POST manual transaction: shared Zod, dedupe conflict surfaced via existing unique index, `source = manual` — US-21
 - [x] 3.4 Budget + commitment handlers (create/update), owner-only share-token create/revoke handlers — US-26, US-28, US-32, US-34
-- [ ] 3.5 Integration tests (local D1): manual-entry dedupe conflict, bulk-attribute partial-reporting, category seed uniqueness, share token resolve/revoke — US-21, US-22, US-24, US-34
+- [x] 3.5 Integration tests (local D1): manual-entry dedupe conflict, bulk-attribute partial-reporting, category seed uniqueness, share token resolve/revoke — US-21, US-22, US-24, US-34
 
 ## 4. UI (server components read; client leaves for interactivity only)
 
@@ -24,8 +24,8 @@
 - [x] 4.2 Re-categorise/reassign controls + bulk-select member action with result report — US-20, US-24
 - [x] 4.3 Manual-entry form: shared Zod, inline Bahasa Indonesia errors, submit disabled in flight — US-21
 - [x] 4.4 Contribution report (in/out/net, unattributed) and budget-vs-actual report (four figures + totals, over-budget mark, error state not zeros) — US-25, US-27
-- [ ] 4.5 Budget inputs (IDR → minor units via money module) + commitments form (DP/pelunasan) — US-26, US-28
-- [ ] 4.6 Duplicate-payment notice in report stating which figure counts — US-30
+- [x] 4.5 Budget inputs (IDR → minor units via money module) + commitments form (DP/pelunasan) — US-26, US-28
+- [x] 4.6 Duplicate-payment notice in report stating which figure counts — US-30
 - [ ] 4.7 Payee-rule offer accept/decline on correction + rules list/delete *(PEP §10 cut candidate #4 — defer first)* — US-23
 - [ ] 4.8 Share-link controls (owner-only, show expiry, revoke) + `/r/:token` read-only report (aggregates only) + unavailable page *(PEP §10 cut candidate #1 — defer second)* — US-32, US-33, US-34
 

@@ -10,7 +10,7 @@ import { getDb } from "@/lib/db";
 import { categories, commitments, members, user } from "@/lib/db/schema";
 import { requireWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardShell } from "../dashboard-nav";
-import { CommitmentActions } from "./commitment-actions";
+import { CommitmentActions, CommitmentSettlement } from "./commitment-actions";
 
 export const metadata: Metadata = { title: "Komitmen" };
 
@@ -91,7 +91,7 @@ async function KomitmenContent() {
             <h1 className="text-h2 font-bold tracking-[-0.02em] text-ink">Komitmen vendor</h1>
             <p className="mt-1 max-w-[62ch] text-small text-ink-muted">
               Kontrak vendor dan sisa pelunasan sampai hari H. Komitmen dihitung di forecast
-              meski uangnya belum keluar.
+              meski uangnya belum keluar. Catat DP dan pelunasan lewat tombol di tiap baris.
             </p>
           </div>
           <SignOutButton />
@@ -136,6 +136,8 @@ async function KomitmenContent() {
                   const paid = toMinor(row.paidMinor);
                   const left = total - paid;
                   const paidInFull = left <= 0;
+                  // Overpayment is stored as entered; never hidden or clamped away.
+                  const overpaid = paid - total;
                   return (
                     <li key={row.id} className="py-3">
                       <div className="flex items-baseline justify-between gap-3">
@@ -168,9 +170,27 @@ async function KomitmenContent() {
                           style={{ width: `${Math.min(100, percent(paid, total))}%` }}
                         />
                       </div>
-                      <p className="mt-1.5 flex justify-between gap-3 text-small tabular-nums text-ink-muted">
+                      <p className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2 text-small tabular-nums text-ink-muted">
                         <span>Terbayar {formatRupiah(paid)}</span>
-                        <span>{paidInFull ? "Lunas" : `Sisa ${formatRupiah(left)}`}</span>
+                        <span className="flex flex-wrap items-center justify-end gap-3">
+                          <span className={overpaid > 0 ? "font-semibold text-ink" : undefined}>
+                            {overpaid > 0
+                              ? `Lunas · lebih ${formatRupiah(overpaid)} dari total`
+                              : paidInFull
+                                ? "Lunas"
+                                : `Sisa ${formatRupiah(left)}`}
+                          </span>
+                          <CommitmentSettlement
+                            workspaceId={workspace.workspaceId}
+                            commitment={{
+                              id: row.id,
+                              vendor: row.vendor,
+                              totalMinor: total,
+                              paidMinor: paid,
+                              dueOn: row.dueOn,
+                            }}
+                          />
+                        </span>
                       </p>
                     </li>
                   );

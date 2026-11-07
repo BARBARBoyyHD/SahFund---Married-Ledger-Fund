@@ -1,20 +1,22 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { PageSkeleton } from "@/components/app/skeleton";
 import { toMinor } from "@/core/dashboard";
-import { formatRupiah } from "@/core/money";
+import { formatDate, formatRupiah } from "@/core/money";
 import { getDb } from "@/lib/db";
-import { members, user } from "@/lib/db/schema";
+import { commitments, members, transactions, user } from "@/lib/db/schema";
 import {
   contributionReport,
   type ContributionLine,
 } from "@/lib/reports/contributions";
 import { budgetVsActualReport } from "@/lib/reports/budget-vs-actual";
+import { matchDuplicatePayments } from "@/lib/reports/duplicate-payments";
 import { requireWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardShell } from "../dashboard-nav";
+import { BudgetAction } from "./budget-action";
 
 export const metadata: Metadata = { title: "Laporan" };
 
@@ -46,7 +48,7 @@ async function LaporanContent() {
   const db = getDb();
   const workspaceId = workspace.workspaceId;
 
-  const [contributionLines, budget, memberRows] = await Promise.all([
+  const [contributionLines, budget, memberRows, paymentRows] = await Promise.all([
     contributionReport(db, workspaceId),
     budgetVsActualReport(db, workspaceId),
     db
@@ -55,7 +57,69 @@ async function LaporanContent() {
       .innerJoin(user, eq(members.userId, user.id))
       .where(eq(members.workspaceId, workspaceId))
       .orderBy(desc(members.role)),
+    db
+      .select({
+        id: commitments.id,
+        vendor: commitments.vendor,
+        paidMinor: commitments.paidMinor,
+      })
+      .from(commitments)
+      .where(eq(commitments.workspaceId, workspaceId)),
   ]);
+
+  /**
+   * US-30. A commitment stores no payment date (only `total`, `paid`, `dueOn`), so the
+   * matcher's date window is unbounded here and the comparison is equal-magnitude only —
+   * a suggestion, never a merge. The ledger read is narrowed in SQL to the commitment
+   * magnitudes (`inArray`, workspace-scoped), never the whole ledger; that set is bounded
+   * by the contract list, not by ledger size.
+   */
+  const paidCommitments = paymentRows
+    .map((row) => ({
+      commitmentId: row.id,
+      vendor: row.vendor,
+      amountMinor: toMinor(row.paidMinor),
+    }))
+    .filter((row) => row.amountMinor > 0);
+  const paidMagnitudes = [...new Set(paidCommitments.map((row) => row.amountMinor))];
+
+  const ledgerRows =
+    paidMagnitudes.length === 0
+      ? []
+      : await db
+          .select({
+            id: transactions.id,
+            occurredOn: transactions.occurredOn,
+            description: transactions.description,
+            amountMinor: transactions.amountMinor,
+          })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.workspaceId, workspaceId),
+              inArray(
+                transactions.amountMinor,
+                paidMagnitudes.map((amount) => BigInt(-amount)),
+              ),
+            ),
+          );
+
+  const duplicatePairs = matchDuplicatePayments(
+    paidCommitments.map(({ commitmentId, amountMinor }) => ({
+      commitmentId,
+      // No stored payment date; ignored because the window below is unbounded.
+      paidOn: "",
+      amountMinor,
+    })),
+    ledgerRows.map((row) => ({
+      transactionId: row.id,
+      occurredOn: row.occurredOn,
+      amountMinor: toMinor(row.amountMinor),
+    })),
+    Number.POSITIVE_INFINITY,
+  );
+  const vendorById = new Map(paidCommitments.map((row) => [row.commitmentId, row.vendor]));
+  const transactionById = new Map(ledgerRows.map((row) => [row.id, row]));
 
   // A member with no rows still belongs in the report at Rp 0 — the query succeeded and
   // the zero is a fact. The unattributed group stays its own line, never folded in.
@@ -219,7 +283,8 @@ async function LaporanContent() {
           </h2>
           <p className="mt-1 text-small text-ink-muted">
             Anggaran, komitmen vendor, yang sudah terbayar, dan sisanya per kategori.
-            Kategori yang lewat anggaran ditandai, bukan dinolkan.
+            Kategori yang lewat anggaran ditandai, bukan dinolkan. Anggaran tiap pos bisa
+            diatur langsung dari barisnya.
           </p>
 
           {budget.rows.length === 0 ? (
@@ -235,7 +300,7 @@ async function LaporanContent() {
               <table className="w-full text-left text-small">
                 <caption className="sr-only">
                   Anggaran, komitmen, terbayar, dan sisa per kategori, dengan baris total
-                  seluruh perhelatan
+                  seluruh perhelatan dan tombol ubah anggaran di tiap baris kategori
                 </caption>
                 <thead>
                   <tr className="border-b border-rule text-ink-muted">
@@ -259,6 +324,9 @@ async function LaporanContent() {
                     </th>
                     <th scope="col" className="pb-2 pl-3 text-right font-medium">
                       Sisa
+                    </th>
+                    <th scope="col" className="pb-2 pl-3 text-right font-medium">
+                      Ubah
                     </th>
                   </tr>
                 </thead>
@@ -294,6 +362,16 @@ async function LaporanContent() {
                       >
                         {remainingLabel(row.remainingMinor, row.overBudget)}
                       </td>
+                      <td className="py-2.5 pl-3 text-right">
+                        {row.categoryId === null ? null : (
+                          <BudgetAction
+                            workspaceId={workspaceId}
+                            categoryId={row.categoryId}
+                            categoryName={row.name ?? "kategori"}
+                            budgetMinor={row.budgetMinor}
+                          />
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -318,6 +396,7 @@ async function LaporanContent() {
                     >
                       {remainingLabel(budget.totals.remainingMinor, budget.totals.overBudget)}
                     </td>
+                    <td />
                   </tr>
                 </tfoot>
               </table>
@@ -338,6 +417,60 @@ async function LaporanContent() {
             nol.
           </p>
         </section>
+
+        {duplicatePairs.length === 0 ? null : (
+          <section
+            aria-labelledby="ganda-judul"
+            className="panel-surface rounded-md border border-gold/40 p-6"
+          >
+            <h2 id="ganda-judul" className="text-h3 font-bold text-ink">
+              Kemungkinan pembayaran ganda
+            </h2>
+            <p className="mt-1 max-w-[75ch] text-small text-ink-muted">
+              Angka yang dihitung di total tabel anggaran adalah <strong>Terbayar dari
+              komitmen</strong>. Transaksi mutasi yang cocok di bawah ini tidak ditambahkan
+              ke kolom Terbayar, tetapi tetap terhitung sebagai uang keluar di laporan
+              kontribusi dan saldo kas — jadi jangan menjumlahkan kedua laporan.
+            </p>
+            <p className="mt-2 max-w-[75ch] text-small text-ink-muted">
+              Tidak ada angka yang digabung, diubah, atau dihapus otomatis. Kecocokan hanya
+              melihat nominal yang sama (tanggal pembayaran komitmen tidak dicatat), jadi
+              periksa dulu apakah keduanya memang pembayaran yang sama.
+            </p>
+
+            <ul className="mt-4 divide-y divide-rule border-t border-rule">
+              {duplicatePairs.map((pair) => {
+                const ledger = transactionById.get(pair.transactionId);
+                return (
+                  <li
+                    key={`${pair.commitmentId}-${pair.transactionId}`}
+                    className="py-3 text-small"
+                  >
+                    <p className="font-medium text-ink">
+                      {vendorById.get(pair.commitmentId) ?? "Komitmen"}{" "}
+                      <span className="whitespace-nowrap font-semibold tabular-nums">
+                        {formatRupiah(pair.amountMinor)}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-ink-muted">
+                      Cocok dengan mutasi{" "}
+                      {ledger ? (
+                        <>
+                          <span className="whitespace-nowrap tabular-nums">
+                            {formatDate(ledger.occurredOn)}
+                          </span>{" "}
+                          · {ledger.description}
+                        </>
+                      ) : (
+                        "di ledger"
+                      )}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
       </main>
     </DashboardShell>
   );

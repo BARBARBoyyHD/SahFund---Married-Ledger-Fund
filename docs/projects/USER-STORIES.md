@@ -70,7 +70,7 @@ Notes:
 
 *Placed first in the story ordering (before E1) — these are the pages a prospective user meets before any workspace exists. Existing epic numbering (E1–E12) and section numbers are unchanged.*
 
-### US-54 — Landing page
+### US-54 — Landing page ✅
 
 **As a** prospective user (guest), **I want** a landing page that explains what SahFund is and leads me to sign up, **so that** I can judge in seconds whether it fits our wedding fund.
 
@@ -97,7 +97,7 @@ Notes:
 
 **Source:** BRD §4 FR-01 (fields, endpoints, server-side session), BRD §5 NFR-02 (auth rate limit), NFR-08 (forms), NFR-09 (Bahasa Indonesia copy); session-cookie attributes per AGENTS.md §9; one shared Zod schema per AGENTS.md §6 / ITA §3. Single-page two-mode layout is an interpretation — Appendix B-14. Account/workspace creation behaviour itself is US-01/US-05, not restated here.
 
-### US-56 — 404 (page not found)
+### US-56 — 404 (page not found) ✅
 
 **As a** visitor who followed a bad or stale link, **I want** a clear "page not found" in Bahasa Indonesia with a way back, **so that** I never hit a dead end, a blank screen, or an error dump.
 

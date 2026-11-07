@@ -115,7 +115,7 @@ export function ReconcileDemo({
           }
           inputMode="numeric"
           autoComplete="off"
-          placeholder="Rp 0"
+          placeholder={formatRupiah(0)}
           aria-describedby={statusId}
           aria-invalid={typedMinor !== null && !matched}
           className="mt-2 h-11 w-full rounded-sm border border-gold-line bg-surface px-3 text-body font-semibold tabular-nums outline-none transition-colors focus:border-emerald focus:ring-2 focus:ring-emerald/25"

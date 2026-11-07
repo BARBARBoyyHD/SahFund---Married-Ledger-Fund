@@ -10,6 +10,7 @@ import { jakartaDay, monthBounds, toMinor } from "@/core/dashboard";
 import { formatDate } from "@/core/money";
 import { getDb } from "@/lib/db";
 import { commitments, members, transactions, user } from "@/lib/db/schema";
+import { trustedTotalsCondition } from "@/lib/ledger/trusted";
 import { requireWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardShell } from "../dashboard-nav";
 import { ForecastSimulator } from "./forecast-simulator";
@@ -42,12 +43,14 @@ async function ForecastContent() {
   const todayIso = jakartaDay(new Date());
   const { lastStart, lastEnd } = monthBounds(todayIso);
   const workspaceId = workspace.workspaceId;
+  // US-17 AC3: every transaction aggregate below honours the flagged-import gate.
+  const trusted = await trustedTotalsCondition(db, workspaceId);
 
   const [balanceRows, unpaidRows, spentRows, lastInRows, memberRows] = await Promise.all([
     db
       .select({ total: sum(transactions.amountMinor) })
       .from(transactions)
-      .where(eq(transactions.workspaceId, workspaceId)),
+      .where(and(eq(transactions.workspaceId, workspaceId), trusted)),
     db
       .select({
         total: sum(commitments.totalMinor),
@@ -67,6 +70,7 @@ async function ForecastContent() {
         and(
           eq(transactions.workspaceId, workspaceId),
           lt(transactions.amountMinor, BigInt(0)),
+          trusted,
         ),
       ),
     db
@@ -78,6 +82,7 @@ async function ForecastContent() {
           gt(transactions.amountMinor, BigInt(0)),
           gte(transactions.occurredOn, lastStart),
           lte(transactions.occurredOn, lastEnd),
+          trusted,
         ),
       ),
     db

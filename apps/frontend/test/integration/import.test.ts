@@ -7,6 +7,7 @@ import { imports, members, transactions, workspaces } from "../../src/lib/db/sch
 import { importStatementSchema } from "../../src/lib/imports/schema.ts";
 import { commitImport, confirmImport } from "../../src/lib/imports/service.ts";
 import { trustedTotalsCondition } from "../../src/lib/ledger/trusted.ts";
+import { contributionReport } from "../../src/lib/reports/contributions.ts";
 
 /**
  * US-12/US-13/US-16/US-17 against real SQLite (AGENTS §11): the import commits
@@ -73,8 +74,6 @@ it("commits the import and its rows atomically, with the server's verdict (US-12
   const workspaceId = await workspaceFor("u-import-1");
 
   const result = await commitImport(h.db, workspaceId, payload());
-  assert.equal(result.ok, true);
-  if (!result.ok) return;
 
   assert.equal(result.inserted, 3);
   assert.equal(result.duplicates, 0);
@@ -94,12 +93,10 @@ it("a re-import is a no-op absorbed by UNIQUE(workspaceId, dedupeHash) (US-13)",
   const workspaceId = await workspaceFor("u-import-2");
 
   const first = await commitImport(h.db, workspaceId, payload());
-  assert.equal(first.ok && first.inserted, 3);
+  assert.equal(first.inserted, 3);
   const before = await snapshot(workspaceId);
 
   const again = await commitImport(h.db, workspaceId, payload());
-  assert.equal(again.ok, true);
-  if (!again.ok) return;
 
   assert.equal(again.inserted, 0, "every row was already stored");
   assert.equal(again.duplicates, 3, "duplicates are counted, not silently swallowed");
@@ -125,7 +122,6 @@ it("two overlapping imports both succeed and the index removes the overlap (US-1
 
   for (const settled of race) {
     assert.equal(settled.status, "fulfilled", "neither import errors");
-    if (settled.status === "fulfilled") assert.equal(settled.value.ok, true);
   }
 
   // Four distinct rows: the two shared ones exist once, never doubled.
@@ -157,8 +153,6 @@ it("a forged client verdict cannot make a broken statement green (US-16)", async
   });
 
   const result = await commitImport(h.db, workspaceId, tampered);
-  assert.equal(result.ok, true);
-  if (!result.ok) return;
 
   assert.equal(result.reconciliation.ok, false);
   const [importRow] = await h.db.select().from(imports).where(eq(imports.id, result.importId));
@@ -173,8 +167,6 @@ it("a flagged import stays out of trusted totals until it is confirmed (US-17)",
     workspaceId,
     payload({ transactions: [ROWS[0], { ...ROWS[1], amountMinor: -60_000_000 }, ROWS[2]] }),
   );
-  assert.equal(flagged.ok, true);
-  if (!flagged.ok) return;
   assert.equal(flagged.reconciliation.ok, false, "this import is flagged");
 
   const trustedTotal = async () => {
@@ -201,4 +193,52 @@ it("a flagged import stays out of trusted totals until it is confirmed (US-17)",
 
   // Confirming twice is a no-op, not a second write.
   assert.equal(await confirmImport(h.db, workspaceId, flagged.importId), false);
+});
+
+it("report aggregates honour the gate — Kontribusi (laporan) and the forecast balance (US-17 AC3)", async () => {
+  const workspaceId = await workspaceFor("u-import-gate");
+
+  const trustedImport = await commitImport(h.db, workspaceId, payload());
+  // One out-of-chain row: flagged (`reconciled = false`), never green.
+  const flagged = await commitImport(
+    h.db,
+    workspaceId,
+    payload({
+      closingBalanceMinor: 760_000_000,
+      totalInMinor: 250_000_000,
+      transactions: [{ ...ROWS[0], balanceMinor: 760_000_000 }],
+    }),
+  );
+  assert.equal(trustedImport.reconciliation.ok, true);
+  assert.equal(flagged.reconciliation.ok, false, "the second import is flagged");
+
+  const aggregates = async () => {
+    // Laporan's Kontribusi table (the shared report function).
+    const lines = await contributionReport(h.db, workspaceId);
+    // Forecast's "saldo tercatat": the same aggregate + gate the forecast page runs.
+    const gate = await trustedTotalsCondition(h.db, workspaceId);
+    const [balance] = await h.db
+      .select({ total: sum(transactions.amountMinor) })
+      .from(transactions)
+      .where(and(eq(transactions.workspaceId, workspaceId), gate));
+
+    return {
+      inMinor: lines.reduce((total, line) => total + line.inMinor, 0),
+      outMinor: lines.reduce((total, line) => total + line.outMinor, 0),
+      balanceMinor: Number(balance.total ?? 0),
+    };
+  };
+
+  assert.deepEqual(
+    await aggregates(),
+    { inMinor: 250_000_000 + 50_000_000, outMinor: 75_000_000, balanceMinor: 225_000_000 },
+    "the unconfirmed flagged import is in no report total",
+  );
+
+  assert.equal(await confirmImport(h.db, workspaceId, flagged.importId), true);
+  assert.deepEqual(
+    await aggregates(),
+    { inMinor: 550_000_000, outMinor: 75_000_000, balanceMinor: 475_000_000 },
+    "after confirmation the flagged rows count",
+  );
 });

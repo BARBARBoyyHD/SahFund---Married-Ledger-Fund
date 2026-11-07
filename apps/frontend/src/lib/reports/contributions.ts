@@ -3,6 +3,7 @@ import { and, eq, gt, gte, lt, lte, sum } from "drizzle-orm";
 import { toMinor } from "../../core/dashboard.ts";
 import type { Db } from "../db/index.ts";
 import { transactions } from "../db/schema.ts";
+import { trustedTotalsCondition } from "../ledger/trusted.ts";
 
 /**
  * US-25: money in, money out and net per member, plus the unattributed line (AGENTS §5).
@@ -71,10 +72,14 @@ export async function contributionReport(
   workspaceId: string,
   range: ContributionRange = {},
 ): Promise<ContributionLine[]> {
+  // US-17 AC3: a flagged import counts only after confirmation — every report aggregate
+  // follows the same gate, this one included (never "silently mixed into trusted numbers").
+  const trusted = await trustedTotalsCondition(db, workspaceId);
   const scope = and(
     eq(transactions.workspaceId, workspaceId),
     range.from ? gte(transactions.occurredOn, range.from) : undefined,
     range.to ? lte(transactions.occurredOn, range.to) : undefined,
+    trusted,
   );
 
   // Two indexed aggregates rather than a CASE expression (rule P1: no raw SQL); both let

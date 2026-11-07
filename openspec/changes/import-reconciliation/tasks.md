@@ -30,6 +30,7 @@
 ## 5. States, a11y, verification
 
 - [x] 5.1 Loading/empty/error+retry/success states on the import screen; labels, keyboard path, `aria-live` errors (AGENTS.md §6, NFR-08)
-- [ ] 5.2 Four-state + keyboard-only manual walkthrough; typecheck + unit + integration tests green (AGENTS.md §11)
-- [ ] 5.3 Verify no file bytes reach server/storage/logs (grep handlers for content logging; NFR-01) — US-09, US-41-adjacent
-- [ ] 5.4 Mark US-09, US-11–17, US-44 (and US-10 if built) ✅ in `docs/projects/USER-STORIES.md`
+- [x] 5.2 Four-state + keyboard-only manual walkthrough; typecheck + unit + integration tests green (AGENTS.md §11)
+- [x] 5.3 Verify no file bytes reach server/storage/logs (grep handlers for content logging; NFR-01) — US-09, US-41-adjacent
+- [x] 5.4 Mark US-09, US-11–17, US-44 (and US-10 if built) ✅ in `docs/projects/USER-STORIES.md` — US-10 left unmarked (`.xlsx` not implemented), US-17 left unmarked (forecast + contributions aggregates do not yet apply `trustedTotalsCondition`)
+- [x] 5.5 Trusted-totals gate applied to ALL transaction aggregates (Kontribusi, forecast, laporan) — US-17 AC3

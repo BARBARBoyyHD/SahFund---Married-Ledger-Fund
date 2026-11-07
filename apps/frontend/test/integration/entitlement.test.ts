@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
+import { register } from "node:module";
 import { after, before, it } from "node:test";
 import { eq } from "drizzle-orm";
 
 import { addUser, startD1 } from "../helpers/d1.ts";
-import { entitlementGrants, imports, transactions, workspaces } from "../../src/lib/db/schema.ts";
+import { entitlementGrants, imports, rateLimits, transactions, workspaces } from "../../src/lib/db/schema.ts";
 import { grantEntitlement } from "../../src/lib/entitlement/grant.ts";
 import { exportGate, importGate } from "../../src/lib/entitlement/gate.ts";
 import { ENTITLEMENT_MESSAGE } from "../../src/lib/entitlement/messages.ts";
 import { EXPORT_HEADER, readExportRows, transactionsToCsv } from "../../src/lib/ledger/export.ts";
+
+// Lets one test import and call the real import route with the local D1 client and a
+// fixed member (see test/helpers/route-loader.mjs).
+register(new URL("../helpers/route-loader.mjs", import.meta.url).href, import.meta.url);
 
 /**
  * Entitlement against real SQLite (US-35, US-37, US-38): the grant is idempotent per
@@ -150,4 +155,72 @@ it("a paid export contains only that workspace's rows, in machine-readable form 
   assert.match(csv, /2026-11-01,"Katering ""Ayu"", gedung",-2500000,7500000,out,REF-1/);
   assert.match(csv, /2026-11-02,Transfer masukan,1000000,8500000,in,/);
   assert.doesNotMatch(csv, /Milik B/, "another workspace's row never reaches the file");
+});
+
+/** The normalised payload the browser posts — one reconciled outgoing row (US-12). */
+const IMPORT_PAYLOAD = {
+  sourceId: "jago",
+  pocketName: "Dompet",
+  period: null,
+  openingBalanceMinor: 1_000_000,
+  totalInMinor: 0,
+  totalOutMinor: 250_000,
+  closingBalanceMinor: 750_000,
+  transactions: [
+    {
+      date: "2026-11-01",
+      time: "",
+      description: "Katering",
+      amountMinor: -250_000,
+      balanceMinor: 750_000,
+      direction: "out",
+      ref: "",
+    },
+  ],
+};
+
+it("the second import on a free workspace answers 403 with the unlock message (US-35)", async () => {
+  await makeWorkspace("ws-http", "u-ent-http");
+
+  const globals = globalThis as typeof globalThis & {
+    __routeDb?: unknown;
+    __routeUserId?: string;
+  };
+  globals.__routeDb = h.db;
+  globals.__routeUserId = "u-ent-http";
+
+  const { POST } = await import("../../src/app/api/workspaces/[id]/imports/route.ts");
+
+  const postImport = () =>
+    POST(
+      new Request("https://sahfund.test/api/workspaces/ws-http/imports", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(IMPORT_PAYLOAD),
+      }),
+      { params: Promise.resolve({ id: "ws-http" }) },
+    );
+
+  const first = await postImport();
+  assert.equal(first.status, 201, "the first import is free");
+  assert.equal(((await first.json()) as { inserted: number }).inserted, 1);
+
+  const second = await postImport();
+  assert.equal(second.status, 403, "a second import is refused, not served");
+  assert.deepEqual(await second.json(), { message: ENTITLEMENT_MESSAGE.locked });
+
+  // The gate ran before persistence and before the rate-limit counter: one import row,
+  // one spent attempt (AGENTS §4/§8, design D2).
+  const importRows = await h.db
+    .select({ id: imports.id })
+    .from(imports)
+    .where(eq(imports.workspaceId, "ws-http"));
+  assert.equal(importRows.length, 1, "the refused import stored nothing");
+
+  const counters = await h.db.select().from(rateLimits);
+  assert.deepEqual(
+    counters.map((row) => row.count),
+    [1],
+    "the refused attempt spent no import budget",
+  );
 });

@@ -8,15 +8,16 @@ import { DashboardSidebarToggle } from "./dashboard-sidebar-toggle";
 
 /**
  * The dashboard chrome shared by `/dashboard` and its subpages. One nav list, so the
- * sidebar and the phone bar can never disagree: Overview is the dashboard, Komitmen and
- * Forecast are real pages with `aria-current`, and Transaksi/Anggaran stay section
- * anchors on the dashboard until their own pages exist.
+ * sidebar and the phone bar can never disagree: Overview, Transaksi, Laporan, Komitmen
+ * and Forecast are real pages with `aria-current`; Anggaran stays a section anchor on
+ * the dashboard until its own page exists.
  */
-export type DashboardSection = "overview" | "komitmen" | "forecast";
+export type DashboardSection = "overview" | "transaksi" | "laporan" | "komitmen" | "forecast";
 
 const NAV = [
   { key: "overview", href: "/dashboard", label: "Overview", icon: "grid" },
-  { key: "transaksi", href: "/dashboard#transaksi", label: "Transaksi", icon: "ledger" },
+  { key: "transaksi", href: "/dashboard/transaksi", label: "Transaksi", icon: "ledger" },
+  { key: "laporan", href: "/dashboard/laporan", label: "Laporan", icon: "report" },
   { key: "anggaran", href: "/dashboard#anggaran", label: "Anggaran", icon: "wallet" },
   { key: "komitmen", href: "/dashboard/komitmen", label: "Komitmen", icon: "calendar" },
   { key: "forecast", href: "/dashboard/forecast", label: "Forecast", icon: "trend" },

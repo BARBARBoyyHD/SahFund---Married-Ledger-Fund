@@ -70,3 +70,28 @@ export const createManualTransactionSchema = z
 export type CreateManualTransactionData = z.output<typeof createManualTransactionSchema>;
 /** What the form holds before submit — rupiah text and a direction, not minor units. */
 export type CreateManualTransactionFormValues = z.input<typeof createManualTransactionSchema>;
+
+/**
+ * US-20 re-categorise: an imported row's amounts/dates are statement facts, so only the
+ * classification fields are accepted. Unlike creation, an omitted field means "leave
+ * unchanged" (a PATCH), while an empty string clears the reference.
+ */
+const updatableId = z
+  .string({ error: "Pilihan tidak valid." })
+  .trim()
+  .max(64, "Pilihan tidak valid.")
+  .optional()
+  .transform((value) => (value === "" ? null : value));
+
+export const updateTransactionClassificationSchema = z.object({
+  categoryId: updatableId,
+  memberId: updatableId,
+});
+
+export type UpdateTransactionClassificationData = z.output<
+  typeof updateTransactionClassificationSchema
+>;
+export type UpdateTransactionClassificationFormValues = z.input<
+  typeof updateTransactionClassificationSchema
+>;
+

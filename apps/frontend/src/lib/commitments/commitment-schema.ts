@@ -57,6 +57,16 @@ const dueOn = z
   )
   .transform((value) => (value === undefined || value === "" ? null : value));
 
+export type CommitmentStatus = "unpaid" | "partial" | "paid";
+
+/**
+ * The one derivation of a commitment's payment state from its amounts (US-28). Used by
+ * create and update, so a pelunasan recorded either way reads the same in the list.
+ */
+export function commitmentStatus(paidMinor: number, totalMinor: number): CommitmentStatus {
+  return paidMinor >= totalMinor ? "paid" : paidMinor > 0 ? "partial" : "unpaid";
+}
+
 export const createCommitmentSchema = z
   .object({
     vendor,
@@ -91,10 +101,56 @@ export const createCommitmentSchema = z
       totalMinor,
       paidMinor,
       dueOn: value.dueOn,
-      status: paidMinor >= totalMinor ? "paid" : paidMinor > 0 ? "partial" : "unpaid",
+      status: commitmentStatus(paidMinor, totalMinor),
     };
   });
 
 export type CreateCommitmentData = z.output<typeof createCommitmentSchema>;
 /** What the form holds before submit — rupiah text, not minor units. */
 export type CreateCommitmentFormValues = z.input<typeof createCommitmentSchema>;
+
+/**
+ * US-28 settlement update (DP, then pelunasan): the same rupiah-text inputs as creation
+ * and a server-derived status. `total` and `paid` are both required because they are the
+ * two halves of the status; the caller (edit dialog) has both, and demanding them avoids
+ * a read-current-row-then-write window (and a silent paid→0). `paid` may exceed `total`:
+ * an overrun is stored as-is and shown unclamped in the reports, never clamped here.
+ * (Creation caps paid at total at the form boundary; this is the settlement path where
+ * costs may grow.) `dueOn` omitted means "unchanged", `""` clears it — a settlement must
+ * never silently wipe a due date it was not asked about.
+ */
+const settledPaid = z
+  .string({ error: "Nominal terbayar belum benar. Tulis angka rupiah, misalnya 5.000.000." })
+  .trim()
+  .refine(
+    (value) => value === "" || (parseRupiahInput(value) ?? -1) >= 0,
+    "Nominal terbayar belum benar. Tulis angka rupiah, misalnya 5.000.000.",
+  );
+
+const updatableDueOn = z
+  .string()
+  .trim()
+  .optional()
+  .refine(
+    (value) => value === undefined || value === "" || z.iso.date().safeParse(value).success,
+    "Tanggal belum benar. Gunakan format YYYY-MM-DD.",
+  )
+  .transform((value) => (value === undefined ? undefined : value === "" ? null : value));
+
+export const updateCommitmentSchema = z
+  .object({ total, paid: settledPaid, dueOn: updatableDueOn })
+  .transform((value) => {
+    const totalMinor = rupiahToMinor(parseRupiahInput(value.total) ?? 0);
+    const paidMinor = rupiahToMinor(value.paid === "" ? 0 : (parseRupiahInput(value.paid) ?? 0));
+
+    return {
+      totalMinor,
+      paidMinor,
+      dueOn: value.dueOn,
+      status: commitmentStatus(paidMinor, totalMinor),
+    };
+  });
+
+export type UpdateCommitmentData = z.output<typeof updateCommitmentSchema>;
+/** What the edit form holds before submit — rupiah text, not minor units. */
+export type UpdateCommitmentFormValues = z.input<typeof updateCommitmentSchema>;

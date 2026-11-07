@@ -2,9 +2,9 @@
 
 - [x] 1.1 Schema: entitlement grants table with `UNIQUE (orderId)` (+ workspaceId); migration generated/committed/applied local — US-37
 - [x] 1.2 Grant handler: one `db.batch()` insert per completed purchase (Rp 49.000/99.000), duplicate order id → no-op; failed/uncertain payment → state unchanged, error surfaced — US-37
-- [ ] 1.3 Free-tier gate in import + export handlers: server-side structured 403 with unlock message (second import, export); first import passes; no client-only locks — US-35, US-38
+- [x] 1.3 Free-tier gate in import + export handlers: server-side structured 403 with unlock message (second import, export); first import passes; no client-only locks — US-35, US-38
 - [x] 1.4 Export route: paid + membership-verified, workspace-scoped rows only, machine-readable format (ISO dates, integer minor units per design) — US-38
-- [ ] 1.5 Integration tests (local D1): grant idempotency per order, free second-import refused with message, paid export scoped — US-35, US-37, US-38
+- [x] 1.5 Integration tests (local D1): grant idempotency per order, free second-import refused with message, paid export scoped — US-35, US-37, US-38
 - [x] 1.6 Pricing page: one-time Rp 49.000/99.000 copy per FR-12, privacy position alongside, no recurring language *(PEP §10 cut candidate #2 — defer first)* — US-36
 
 ## 2. Deletion & privacy (US-39–42)

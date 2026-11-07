@@ -46,10 +46,13 @@ export function DashboardSidebarToggle() {
       aria-controls="dashboard-sidebar"
       aria-expanded={expanded}
       aria-label={expanded ? "Tutup menu sidebar" : "Buka menu sidebar"}
-      className="flex h-9 w-9 items-center justify-center rounded-sm text-ink-muted transition-colors hover:bg-emerald-soft hover:text-emerald"
+      className="sidebar-center flex h-9 items-center gap-2.5 rounded-sm px-3 text-small font-medium text-ink-muted transition-colors hover:bg-emerald-soft hover:text-emerald"
     >
-      <Icon name="collapse" className="sidebar-expanded-only h-4 w-4" />
-      <Icon name="expand" className="sidebar-collapsed-only h-4 w-4" />
+      <Icon name="collapse" className="sidebar-expanded-only h-4 w-4 shrink-0" />
+      <Icon name="expand" className="sidebar-collapsed-only h-4 w-4 shrink-0" />
+      <span className="sidebar-full-only">
+        {expanded ? "Sembunyikan menu" : "Tampilkan menu"}
+      </span>
     </button>
   );
 }

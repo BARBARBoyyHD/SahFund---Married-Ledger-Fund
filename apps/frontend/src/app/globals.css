@@ -209,6 +209,22 @@
     background-color: rgb(4 20 15 / 0.55);
   }
 
+  /* Phone shell (docs/ui/html/design.html): below lg the dashboard owns the viewport,
+     the inner pane is the only scroller and the document cannot scroll. `100vh` first
+     is the fallback for browsers without `dvh`; both keep the bar at the viewport edge. */
+  @media (max-width: 1023.98px) {
+    html:has(.dashboard-shell),
+    body:has(.dashboard-shell) {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .dashboard-shell {
+      height: 100vh;
+      height: 100dvh;
+    }
+  }
+
   /* Dashboard sidebar collapse (lg+). The pre-paint script in layout.tsx sets
      data-sidebar on <html> from localStorage, so the rail renders at its stored
      width before hydration — no flash, no mismatch. */

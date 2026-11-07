@@ -49,16 +49,20 @@ export function DashboardSidebar({
       id="dashboard-sidebar"
       className="dashboard-sidebar hidden w-60 shrink-0 flex-col gap-6 border-r border-gold/35 bg-pearl px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh"
     >
-      <Link
-        href="/dashboard"
-        aria-label="SahFund — dashboard"
-        className="sidebar-center flex items-center gap-2.5 rounded-xs px-2"
-      >
-        <Mark size={28} />
-        <span className="sidebar-full-only text-h3 font-bold tracking-[-0.02em] text-ink">
-          SahFund
-        </span>
-      </Link>
+      <div className="flex flex-col gap-1">
+        <Link
+          href="/dashboard"
+          aria-label="SahFund — dashboard"
+          className="sidebar-center flex items-center gap-2.5 rounded-xs px-2"
+        >
+          <Mark size={28} />
+          <span className="sidebar-full-only text-h3 font-bold tracking-[-0.02em] text-ink">
+            SahFund
+          </span>
+        </Link>
+
+        <DashboardSidebarToggle />
+      </div>
 
       <div className="sidebar-full-only card-sheen rounded-sm border border-gold/35 p-3">
         <div className="flex items-center gap-2.5">
@@ -108,10 +112,6 @@ export function DashboardSidebar({
           })}
         </ul>
       </nav>
-
-      <div className="mt-auto flex justify-center">
-        <DashboardSidebarToggle />
-      </div>
     </aside>
   );
 }
@@ -165,7 +165,7 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   return (
-    <div className="flex h-dvh flex-col bg-pearl text-ink [--focus-ring:var(--color-emerald)] lg:h-auto lg:min-h-svh lg:flex-row">
+    <div className="dashboard-shell flex flex-col bg-pearl text-ink [--focus-ring:var(--color-emerald)] lg:h-auto lg:min-h-svh lg:flex-row">
       <a
         href="#konten"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-surface focus:px-4 focus:py-2 focus:text-small focus:font-bold focus:text-ink"

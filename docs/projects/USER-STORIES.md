@@ -83,7 +83,7 @@ Notes:
 
 **Source:** scope-inferred — no BRD FR names a landing page (Appendix B-13). Derived from BRD §1 (what SahFund is), BRD §3 In Scope (account creation and sign-in), BRD §4 FR-01 (the sign-up it routes to), FR-12 (price claim, if shown), BRD §5 NFR-04 (budget applied by analogy), NFR-08, NFR-09; CTA/visual conventions per `docs/ui/DESIGN.md` (one primary button per view).
 
-### US-55 — Auth page (sign in and sign up on one page)
+### US-55 — Auth page (sign in and sign up on one page) ✅
 
 **As a** prospective user or returning member, **I want** one auth page offering both sign-up and sign-in, **so that** I can get in without hunting for the right URL.
 
@@ -110,9 +110,9 @@ Notes:
 
 ---
 
-## 5. Epic E1 — Authentication & Session
+## 5. Epic E1 — Authentication & Session ✅
 
-### US-01 — Sign up
+### US-01 — Sign up ✅
 
 **As a** prospective user, **I want** to create an account with my name, email, and password, **so that** I have a personal identity in SahFund and can start a workspace.
 
@@ -122,7 +122,7 @@ Notes:
 
 **Source:** BRD §4 FR-01.
 
-### US-02 — Sign in
+### US-02 — Sign in ✅
 
 **As a** registered user, **I want** to sign in with my email and password, **so that** I can reach my workspace.
 
@@ -132,7 +132,7 @@ Notes:
 
 **Source:** BRD §4 FR-01, BRD §5 NFR-02.
 
-### US-03 — Sign out
+### US-03 — Sign out ✅
 
 **As a** user on a shared or borrowed device, **I want** to sign out, **so that** my fund data cannot be opened after I leave.
 
@@ -141,7 +141,7 @@ Notes:
 
 **Source:** BRD §4 FR-01.
 
-### US-04 — Server-side session and membership enforcement
+### US-04 — Server-side session and membership enforcement ✅
 
 **As a** member, **I want** every protected page and mutation to verify my session and workspace membership on the server, **so that** nobody can reach our fund by guessing URLs or bypassing the redirect.
 
@@ -153,9 +153,9 @@ Notes:
 
 ---
 
-## 6. Epic E2 — Workspace & Invite
+## 6. Epic E2 — Workspace & Invite ✅
 
-### US-05 — Create a workspace
+### US-05 — Create a workspace ✅
 
 **As a** partner (founder), **I want** to create our shared workspace with a name and optional wedding date and budget target, **so that** both of us track one fund.
 
@@ -166,7 +166,7 @@ Notes:
 
 **Source:** BRD §4 FR-02 (including the one-workspace-per-user rule); BRD §3 In Scope; BRD §5 NFR-03.
 
-### US-06 — Join by pocket code
+### US-06 — Join by pocket code ✅
 
 **As an** invited partner, **I want** to join the workspace with the pocket code, **so that** we both see the same fund.
 
@@ -178,7 +178,7 @@ Notes:
 
 **Source:** BRD §4 FR-02 (two-member cap and one-workspace-per-user rule, both DB-enforced; clear messages; pocket code format). Already-member behaviour derives from the `UNIQUE (workspaceId, userId)` and `UNIQUE (userId)` constraints (ITA §5); the concurrent cap from `UNIQUE (workspaceId, role)` — the handler only maps the violated constraint to the message, it does not count members.
 
-### US-07 — Rotate the invite code
+### US-07 — Rotate the invite code ✅
 
 **As a** workspace owner, **I want** to rotate the invite code, **so that** a code shared in the wrong chat stops working.
 
@@ -188,7 +188,7 @@ Notes:
 
 **Source:** BRD §4 FR-02 ("rotatable by the owner"). Owner-only restriction is an interpretation — see Appendix B-6.
 
-### US-08 — Set or update the wedding date and budget target
+### US-08 — Set or update the wedding date and budget target ✅
 
 **As a** member, **I want** to set or change the wedding date and budget target after creation, **so that** the forecast and report targets reflect reality.
 
@@ -198,7 +198,7 @@ Notes:
 
 **Source:** BRD §4 FR-02 (fields and dashboard prompt); edit path not specified in BRD — see Appendix B-6.
 
-### US-52 — Send a pocket invite by email (Resend)
+### US-52 — Send a pocket invite by email (Resend) ✅
 
 **As a** workspace owner, **I want** to invite my partner by email so the invitation arrives in their inbox, **so that** I do not have to coordinate getting the code to them out of band.
 
@@ -209,7 +209,7 @@ Notes:
 
 **Source:** BRD §4 FR-13 (Resend, fallback + retry, invitations-only), BRD §4 FR-02, BRD §5 NFR-02 (10/hour/workspace); ITA §6 / §7 / ADR-12, ITA §11.9 log hygiene.
 
-### US-53 — Join from the invite email link
+### US-53 — Join from the invite email link ✅
 
 **As an** invited partner, **I want** to open the link in the invite email and join, **so that** joining takes one confirmation instead of tracking down a code.
 
@@ -434,7 +434,7 @@ Notes:
 
 **Source:** BRD §4 FR-09 (POST), BRD §3 In Scope (commitments, DP, pelunasan).
 
-### US-29 — See upcoming commitment due dates on the dashboard
+### US-29 — See upcoming commitment due dates on the dashboard ✅
 
 **As a** member, **I want** the next due dates listed on the dashboard, **so that** nothing falls due unnoticed.
 
@@ -452,7 +452,7 @@ Notes:
 
 **Source:** BRD §4 FR-09 ("must be visibly reconciled"). Exact UX undefined — see Appendix B-2.
 
-### US-31 — Get the funded-or-shortfall forecast
+### US-31 — Get the funded-or-shortfall forecast ✅
 
 **As a** member asking the only question that matters, **I want** one sentence and one number — how much is still needed and what to set aside each month — **so that** I know if the wedding is funded by its date.
 
@@ -584,7 +584,7 @@ Notes:
 
 ## 15. Epic E11 — Errors & Resilience
 
-### US-43 — Get an explicit error with retry when the database is unreachable
+### US-43 — Get an explicit error with retry when the database is unreachable ✅
 
 **As a** member, **I want** a clear failure message with a retry option when the database is down, **so that** I am never misled by a blank or fake-zero dashboard.
 
@@ -614,7 +614,7 @@ Notes:
 
 **Source:** BRD §5 NFR-02 (10/min/IP auth; 20/hour/workspace import), AGENTS.md §9.
 
-### US-46 — Report system health to the operator
+### US-46 — Report system health to the operator ✅
 
 **As an** operator, **I want** a health endpoint reporting database status, **so that** outages are detected without waiting for user complaints.
 

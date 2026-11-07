@@ -209,6 +209,62 @@
     background-color: rgb(4 20 15 / 0.55);
   }
 
+  /* Phone shell (docs/ui/html/design.html): below lg the dashboard owns the viewport,
+     the inner pane is the only scroller and the document cannot scroll. `100vh` first
+     is the fallback for browsers without `dvh`; both keep the bar at the viewport edge. */
+  @media (max-width: 1023.98px) {
+    html:has(.dashboard-shell),
+    body:has(.dashboard-shell) {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .dashboard-shell {
+      height: 100vh;
+      height: 100dvh;
+    }
+  }
+
+  /* Dashboard sidebar collapse (lg+). The pre-paint script in layout.tsx sets
+     data-sidebar on <html> from localStorage, so the rail renders at its stored
+     width before hydration — no flash, no mismatch. */
+  .sidebar-collapsed-only {
+    display: none;
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-sidebar {
+      transition: width 180ms var(--ease-out);
+    }
+
+    html[data-sidebar="collapsed"] .dashboard-sidebar {
+      width: 4rem;
+    }
+
+    html[data-sidebar="collapsed"] .dashboard-sidebar .sidebar-full-only {
+      display: none;
+    }
+
+    html[data-sidebar="collapsed"] .dashboard-sidebar .sidebar-center {
+      justify-content: center;
+      padding-inline: 0;
+    }
+
+    html[data-sidebar="collapsed"] .dashboard-sidebar .sidebar-collapsed-only {
+      display: block;
+    }
+
+    html[data-sidebar="collapsed"] .dashboard-sidebar .sidebar-expanded-only {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-sidebar {
+      transition: none;
+    }
+  }
+
   /* Reveal. The hidden start exists only when script runs and motion is allowed. */
   @media (prefers-reduced-motion: no-preference) {
     .js [data-reveal] {

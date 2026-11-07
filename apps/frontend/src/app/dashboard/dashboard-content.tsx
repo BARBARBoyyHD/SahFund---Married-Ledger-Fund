@@ -26,6 +26,7 @@ import {
   transactions,
   user,
 } from "@/lib/db/schema";
+import { trustedTotalsCondition } from "@/lib/ledger/trusted";
 import { requireSession } from "@/lib/session";
 import { readWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardActions } from "./dashboard-dialogs";
@@ -48,6 +49,8 @@ export async function DashboardContent() {
 
   const workspaceId = account.workspaceId;
   const { thisStart, thisEnd, lastStart, lastEnd } = monthBounds(todayIso);
+  // US-17: flagged-but-unconfirmed imports stay out of every total below.
+  const trusted = await trustedTotalsCondition(db, workspaceId);
 
   const [
     memberRows,
@@ -70,7 +73,7 @@ export async function DashboardContent() {
     db
       .select({ txCount: count(), balance: sum(transactions.amountMinor) })
       .from(transactions)
-      .where(eq(transactions.workspaceId, workspaceId)),
+      .where(and(eq(transactions.workspaceId, workspaceId), trusted)),
     // Each figure is one indexed aggregate (AGENTS §4); the month bounds are app-side
     // text (rule P6) and the query builder keeps the dialect in schema.ts (rule P1).
     db
@@ -82,6 +85,7 @@ export async function DashboardContent() {
           gt(transactions.amountMinor, BigInt(0)),
           gte(transactions.occurredOn, thisStart),
           lte(transactions.occurredOn, thisEnd),
+          trusted,
         ),
       ),
     db
@@ -93,6 +97,7 @@ export async function DashboardContent() {
           lt(transactions.amountMinor, BigInt(0)),
           gte(transactions.occurredOn, thisStart),
           lte(transactions.occurredOn, thisEnd),
+          trusted,
         ),
       ),
     db
@@ -104,6 +109,7 @@ export async function DashboardContent() {
           gt(transactions.amountMinor, BigInt(0)),
           gte(transactions.occurredOn, lastStart),
           lte(transactions.occurredOn, lastEnd),
+          trusted,
         ),
       ),
     db
@@ -113,7 +119,11 @@ export async function DashboardContent() {
       })
       .from(transactions)
       .where(
-        and(eq(transactions.workspaceId, workspaceId), gt(transactions.amountMinor, BigInt(0))),
+        and(
+          eq(transactions.workspaceId, workspaceId),
+          gt(transactions.amountMinor, BigInt(0)),
+          trusted,
+        ),
       )
       .groupBy(transactions.memberId),
     db
@@ -147,6 +157,7 @@ export async function DashboardContent() {
           eq(transactions.categoryId, categories.id),
           eq(transactions.workspaceId, workspaceId),
           lt(transactions.amountMinor, BigInt(0)),
+          trusted,
         ),
       )
       // Every category, budgeted or not: seeded workspaces show the taxonomy immediately,
@@ -762,6 +773,7 @@ export async function DashboardContent() {
                   id="transaksi"
                   className="panel-surface scroll-mt-6 rounded-md p-6"
                 >
+                <div className="flex items-baseline justify-between gap-3">
                   <div className="min-w-0">
                     <h2 id="transaksi-judul" className="text-h3 font-bold text-ink">
                       Transaksi terbaru
@@ -770,6 +782,10 @@ export async function DashboardContent() {
                       Mutasi rekening &amp; pembayaran langsung
                     </p>
                   </div>
+                  <Link href="/dashboard/transaksi" className={`${LINK} shrink-0 text-small`}>
+                    Semua
+                  </Link>
+                </div>
 
                   {recent.length === 0 ? (
                     <EmptyState>

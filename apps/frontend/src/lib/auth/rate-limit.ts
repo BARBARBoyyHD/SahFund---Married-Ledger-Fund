@@ -3,11 +3,12 @@ import { lte, lt } from "drizzle-orm";
 import type { Db } from "../db/index.ts";
 import { rateLimitIncrement, rateLimits } from "../db/schema.ts";
 
-/** NFR-02 windows. The key prefix picks the policy: `ip:` auth 10/min, `ws:` invite 10/hour. */
+/** NFR-02 windows. The key prefix picks the policy: `ip:` auth 10/min, `ws:` invite 10/hour, `ws:import:` import 20/hour. */
 export type Limit = { limit: number; windowMs: number };
 
 export const AUTH_LIMIT: Limit = { limit: 10, windowMs: 60_000 };
 export const INVITE_LIMIT: Limit = { limit: 10, windowMs: 3_600_000 };
+export const IMPORT_LIMIT: Limit = { limit: 20, windowMs: 3_600_000 };
 
 /** Caller identity for the auth limit: the edge-supplied client IP, never a header we trust blindly. */
 export function clientKey(request: Request) {

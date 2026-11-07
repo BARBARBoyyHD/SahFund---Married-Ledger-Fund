@@ -2,7 +2,6 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import { dedupeHash } from "../../core/dedupe.ts";
 import { reconcile, type Reconciliation } from "../../core/reconcile.ts";
-import { IMPORT_LIMIT, allowAttempt } from "../auth/rate-limit.ts";
 import type { Db } from "../db/index.ts";
 import { imports, transactions } from "../db/schema.ts";
 import type { ImportStatementData } from "./schema.ts";
@@ -18,31 +17,25 @@ import type { ImportStatementData } from "./schema.ts";
  * - Duplicates are dropped by `UNIQUE (workspaceId, dedupeHash)`, not by a prior read:
  *   `ON CONFLICT DO NOTHING` makes a re-import a no-op and lets two overlapping imports
  *   both succeed (AGENTS §3).
+ *
+ * The NFR-02 budget is spent by the handler before calling this (US-45), so a refused
+ * attempt never reaches these writes.
  */
 
-export type CommitImportResult =
-  | {
-      ok: true;
-      importId: string;
-      /** Rows the unique index actually stored. */
-      inserted: number;
-      /** Posted rows the index dropped as already present. */
-      duplicates: number;
-      reconciliation: Reconciliation;
-    }
-  | { ok: false; reason: "rate-limited" };
+export type CommitImportResult = {
+  importId: string;
+  /** Rows the unique index actually stored. */
+  inserted: number;
+  /** Posted rows the index dropped as already present. */
+  duplicates: number;
+  reconciliation: Reconciliation;
+};
 
 export async function commitImport(
   db: Db,
   workspaceId: string,
   data: ImportStatementData,
 ): Promise<CommitImportResult> {
-  // NFR-02: 20 imports/hour/workspace, spent before any row is written. A distinct key
-  // from the invite limit so the two budgets never consume each other.
-  if (!(await allowAttempt(db, `ws:import:${workspaceId}`, IMPORT_LIMIT))) {
-    return { ok: false, reason: "rate-limited" };
-  }
-
   const reconciliation = reconcile({
     name: data.pocketName,
     openingBalanceMinor: data.openingBalanceMinor,
@@ -105,7 +98,6 @@ export async function commitImport(
     .reduce((total, stored) => total + stored.length, 0);
 
   return {
-    ok: true,
     importId,
     inserted,
     duplicates: rows.length - inserted,

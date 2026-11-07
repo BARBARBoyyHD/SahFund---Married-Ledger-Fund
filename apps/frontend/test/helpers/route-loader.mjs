@@ -16,7 +16,13 @@ const STUB_DB = `data:text/javascript,${encodeURIComponent(
 )}`;
 
 const STUB_MEMBERSHIP = `data:text/javascript,${encodeURIComponent(
-  "export async function membershipForApi() { return { ok: true, userId: globalThis.__routeUserId, role: 'owner' }; }",
+  "export async function membershipForApi() { return { ok: true, userId: globalThis.__routeUserId, role: globalThis.__routeRole ?? 'owner' }; }",
+)}`;
+
+// US-40: routes that read the session get a test-supplied reader (a DB lookup in the
+// deletion test), so "the session row is gone → the call is refused" is asserted, not mocked.
+const STUB_SESSION = `data:text/javascript,${encodeURIComponent(
+  "export async function getSession() { return globalThis.__routeSession ? globalThis.__routeSession() : null; }",
 )}`;
 
 export async function resolve(specifier, context, nextResolve) {
@@ -24,6 +30,7 @@ export async function resolve(specifier, context, nextResolve) {
   if (specifier === "next/server") return nextResolve("next/server.js", context);
   if (specifier === "@/lib/db") return { url: STUB_DB, shortCircuit: true };
   if (specifier === "@/lib/membership") return { url: STUB_MEMBERSHIP, shortCircuit: true };
+  if (specifier === "@/lib/session") return { url: STUB_SESSION, shortCircuit: true };
   if (specifier.startsWith("@/")) {
     return { url: new URL(`${specifier.slice(2)}.ts`, SRC).href, shortCircuit: true };
   }

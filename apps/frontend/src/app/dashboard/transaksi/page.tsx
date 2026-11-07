@@ -19,6 +19,7 @@ import {
 import { requireWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardShell } from "../dashboard-nav";
 import { BulkAttributeBar } from "./bulk-attribute-bar";
+import { ExportButton } from "./export-button";
 import { ManualEntryDialog } from "./manual-entry-dialog";
 import { TransactionActions } from "./transaction-actions";
 
@@ -124,6 +125,7 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
               categories={categoryRows}
               members={memberOptions}
             />
+            <ExportButton workspaceId={workspaceId} />
             <SignOutButton />
           </div>
         </div>
@@ -433,7 +435,7 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
 }
 
 const FILTER_CONTROL =
-  "h-11 w-full rounded-sm border border-gold-line bg-surface px-3 text-body text-ink outline-none transition-colors placeholder:text-ink-muted/70 focus:border-emerald focus:ring-2 focus:ring-emerald/25";
+  "h-11 w-full rounded-sm border border-gold-line bg-surface px-3 text-body text-ink outline-none transition-colors placeholder:text-ink-muted focus:border-emerald focus:ring-2 focus:ring-emerald/25";
 
 /** Label + control; the id contract stays at the call site (`htmlFor`). */
 function FilterField({

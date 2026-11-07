@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { PageSkeleton } from "@/components/app/skeleton";
+import { jakartaDay } from "@/core/dashboard";
 import { formatDate } from "@/core/money";
 import type { ReconcileIssue } from "@/core/reconcile";
 import { getDb } from "@/lib/db";
@@ -117,7 +118,7 @@ async function ImportsContent() {
                       </p>
                       <p className="mt-1 text-small text-ink-muted">
                         {row.txCount} transaksi · diimpor{" "}
-                        {formatDate(row.createdAt.toISOString().slice(0, 10))}
+                        {formatDate(jakartaDay(row.createdAt))}
                       </p>
                     </div>
                     <p

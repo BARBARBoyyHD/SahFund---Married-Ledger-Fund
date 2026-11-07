@@ -434,7 +434,7 @@ export async function DashboardContent() {
                     />
                   </div>
                   <div className="mt-1 flex items-baseline justify-between gap-3 text-small text-pearl-muted">
-                    <span className="tabular-nums">Rp 0</span>
+                    <span className="tabular-nums">{formatRupiah(0)}</span>
                     <span>
                       Target{" "}
                       <span className="font-semibold tabular-nums text-pearl">

@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 
+import { IMPORT_LIMIT, allowAttempt } from "@/lib/auth/rate-limit";
 import { getDb } from "@/lib/db";
 import { importGate } from "@/lib/entitlement/gate";
-import { invalid, locked, logFailure, unavailable } from "@/lib/http";
+import { invalid, locked, logFailure, rateLimited, unavailable } from "@/lib/http";
 import { importStatementSchema } from "@/lib/imports/schema";
 import { commitImport } from "@/lib/imports/service";
 import { membershipForApi } from "@/lib/membership";
 
 /**
  * US-12/US-13/US-16: commit a parsed statement. Orchestration only — membership, the
- * shared Zod body, then one service call that re-runs reconciliation and writes the
- * import row plus its rows in a single `db.batch()`.
+ * shared Zod body, the NFR-02 budget, then one service call that re-runs reconciliation
+ * and writes the import row plus its rows in a single `db.batch()`.
  *
  * A reconciliation failure still stores the import with `reconciled = false` (the user
  * chose to continue); a *parse* failure never reaches this handler (US-44).
@@ -36,15 +37,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const parsed = importStatementSchema.safeParse(body ?? {});
   if (!parsed.success) return invalid(parsed.error);
 
+  // US-45: 20 imports/hour/workspace, keyed `imp:` so the invite budget is untouchable.
+  // Spent only for a statement that would be committed, and never on a denied attempt.
+  try {
+    if (!(await allowAttempt(getDb(), `imp:${id}`, IMPORT_LIMIT))) {
+      return rateLimited("impor", IMPORT_LIMIT.windowMs);
+    }
+  } catch (error) {
+    logFailure("POST /api/workspaces/[id]/imports", error);
+    return unavailable();
+  }
+
   try {
     const result = await commitImport(getDb(), id, parsed.data);
-
-    if (!result.ok) {
-      return NextResponse.json(
-        { message: "Terlalu banyak impor dalam satu jam terakhir. Coba lagi nanti." },
-        { status: 429 },
-      );
-    }
 
     return NextResponse.json(
       {

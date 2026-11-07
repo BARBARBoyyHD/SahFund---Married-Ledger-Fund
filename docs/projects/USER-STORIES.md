@@ -498,7 +498,7 @@ Notes:
 
 ## 13. Epic E9 — Entitlement & Purchase
 
-### US-35 — Understand the free tier's limits
+### US-35 — Understand the free tier's limits ✅
 
 **As a** prospective user, **I want** the dashboard to work with one free import and to clearly show what unlocking adds, **so that** I can evaluate before paying.
 
@@ -508,7 +508,7 @@ Notes:
 
 **Source:** BRD §4 FR-12 (free state).
 
-### US-36 — See the one-time price
+### US-36 — See the one-time price ✅
 
 **As a** prospective user, **I want** a pricing page stating one price for the whole wedding, **so that** there are no subscription surprises.
 
@@ -517,7 +517,7 @@ Notes:
 
 **Source:** BRD §4 FR-12 (price), BRD §7 Phase 4 (pricing page), BRD §8 (billing model). *PEP §10 cut candidate #2.*
 
-### US-37 — Buy once and unlock the workspace
+### US-37 — Buy once and unlock the workspace ✅
 
 **As a** partner ready to pay, **I want** a one-time purchase that unlocks unlimited imports and export for our workspace, **so that** we pay once and the product keeps working until the wedding.
 
@@ -527,7 +527,7 @@ Notes:
 
 **Source:** BRD §4 FR-12 (paid state, price, one-time charge); idempotency per ITA §6, AGENTS.md §3. Purchase mechanism undecided — see Appendix B-3.
 
-### US-38 — Export my data
+### US-38 — Export my data ✅
 
 **As a** workspace owner, **I want** to export our transaction rows once paid, **so that** I own a copy of my data before I delete anything.
 
@@ -541,7 +541,7 @@ Notes:
 
 ## 14. Epic E10 — Deletion & Privacy
 
-### US-39 — Delete a workspace
+### US-39 — Delete a workspace ✅
 
 **As a** workspace owner, **I want** to delete our workspace, **so that** our financial history is erased when we are done (or on request).
 
@@ -549,9 +549,9 @@ Notes:
 - **Given** a deleted workspace, **When** backups age out, **Then** the data is purged from backups within 30 days.
 - **Given** a non-owner, **When** they attempt workspace deletion, **Then** the action is refused.
 
-**Source:** BRD §4 FR-12 (deletion), BRD §5 NFR-06 (purge ≤ 30 days), BRD §3 In Scope; cascade per ITA §5/§7. Owner-only restriction: Appendix B-6.
+**Source:** BRD §4 FR-12 (deletion), BRD §5 NFR-06 (purge ≤ 30 days), BRD §3 In Scope; cascade per ITA §5/§7. Owner-only restriction: Appendix B-6. *Backup purge is the documented ≤ 30-day operational procedure (`docs/projects/RUNBOOK-backup-purge.md`), not an automated job.*
 
-### US-40 — Delete my account
+### US-40 — Delete my account ✅
 
 **As a** user, **I want** to delete my account, **so that** my personal data is not kept after I leave (Indonesian PDP law).
 
@@ -559,9 +559,9 @@ Notes:
 - **Given** an account that owns a workspace, **When** it is deleted, **Then** the workspace follows an explicit, stated path (deleted with it, or clearly handed over) — never left silently broken for the other member.
 - **Given** a deletion request, **When** it is processed, **Then** the purge completes within the 30-day backup window stated by NFR-06.
 
-**Source:** BRD §3 In Scope ("Account and workspace deletion"), BRD §5 NFR-06. Side-effect semantics undefined — see Appendix B-5.
+**Source:** BRD §3 In Scope ("Account and workspace deletion"), BRD §5 NFR-06. Side-effect semantics undefined — see Appendix B-5. *Backup purge likewise covered by the documented procedure in `docs/projects/RUNBOOK-backup-purge.md` (not automated).*
 
-### US-41 — No statement file, image, or avatar of mine is ever stored
+### US-41 — No statement file, image, or avatar of mine is ever stored ✅
 
 **As a** privacy-conscious member, **I want** a product that stores only normalised rows, **so that** there are no documents to breach, leak, or retain.
 
@@ -571,7 +571,7 @@ Notes:
 
 **Source:** BRD §5 NFR-01, BRD §4 FR-03 ("never uploaded, never stored, never logged"), BRD §8 (document storage: none), ITA ADR-08.
 
-### US-42 — My financial details stay out of system logs
+### US-42 — My financial details stay out of system logs ✅
 
 **As a** member, **I want** operational logs to carry no amounts or row contents, **so that** routine monitoring can never expose our finances.
 
@@ -604,7 +604,7 @@ Notes:
 
 **Source:** BRD §4 FR-03 (validate step); failure behaviour per ITA §2, AGENTS.md §8.
 
-### US-45 — Get a clear message when rate limited
+### US-45 — Get a clear message when rate limited ✅
 
 **As a** user hitting a limit, **I want** to be told plainly that I am rate limited and when to retry, **so that** I never see a mysterious dead button.
 
@@ -627,7 +627,7 @@ Notes:
 
 ## 16. Epic E12 — Accessibility, Localisation & Performance
 
-### US-47 — Exact money arithmetic and display
+### US-47 — Exact money arithmetic and display ✅
 
 **As a** member, **I want** every amount stored and summed exactly, **so that** reconciliation and totals are never off by rounding.
 
@@ -637,7 +637,7 @@ Notes:
 
 **Source:** BRD §5 NFR-03, BRD §4 FR-04.
 
-### US-48 — Bahasa Indonesia first, IDR and id-ID formatting everywhere
+### US-48 — Bahasa Indonesia first, IDR and id-ID formatting everywhere ✅
 
 **As an** Indonesian user, **I want** the whole product in Bahasa Indonesia with rupiah and dates in local format, **so that** I read amounts correctly at a glance.
 
@@ -647,7 +647,7 @@ Notes:
 
 **Source:** BRD §5 NFR-09; wording per BRD §9, AGENTS.md §6.
 
-### US-49 — Use the whole product with a keyboard and assistive tech (WCAG 2.2 AA)
+### US-49 — Use the whole product with a keyboard and assistive tech (WCAG 2.2 AA) ✅
 
 **As a** keyboard or screen-reader user, **I want** every interactive screen to meet WCAG 2.2 AA, **so that** I can manage our fund without a mouse.
 
@@ -657,7 +657,7 @@ Notes:
 
 **Source:** BRD §5 NFR-08; specifics per AGENTS.md §6.
 
-### US-50 — Every screen has loading, empty, error, and success states
+### US-50 — Every screen has loading, empty, error, and success states ✅
 
 **As a** member on a flaky connection, **I want** each screen to always tell me what is happening, **so that** I am never left staring at a blank page.
 
@@ -668,7 +668,9 @@ Notes:
 
 **Source:** BRD §5 NFR-07 (explicit error, no blank screen); state inventory per AGENTS.md §6.
 
-### US-51 — Fast on a 4G phone
+### US-51 — Fast on a 4G phone ✅
+
+*Structural checks (pdf.js dynamic-only, ledger server-paginated) and LOCAL dev timings are recorded in `openspec/changes/monetisation-hardening/evidence/4.5-performance.md`; the 4G p95 budgets (dashboard ≤ 1.5 s, import ≤ 5 s) are **not yet measured on preview** — no preview deploy exists (PEP M1 deploy task unchecked).*
 
 **As a** member checking the fund on mobile data, **I want** the dashboard and import to be quick, **so that** the product beats the spreadsheet it replaces.
 

@@ -16,6 +16,4 @@ export const WORKSPACE_MESSAGE = {
   invalidCode: "Kode undangan tidak valid.",
   /** US-07/US-52: rotation and invite sending are owner-only. */
   ownerOnly: "Hanya pemilik workspace yang bisa melakukan ini.",
-  /** US-52: the NFR-02 invite budget (10 per workspace per hour). */
-  rateLimited: "Terlalu banyak percobaan. Tunggu satu jam lalu coba lagi.",
 } as const;

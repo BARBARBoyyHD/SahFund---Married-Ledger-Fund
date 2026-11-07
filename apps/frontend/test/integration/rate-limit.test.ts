@@ -5,7 +5,13 @@ import { eq } from "drizzle-orm";
 
 import { startD1 } from "../helpers/d1.ts";
 import * as schema from "../../src/lib/db/schema.ts";
-import { AUTH_LIMIT, INVITE_LIMIT, allowAttempt } from "../../src/lib/auth/rate-limit.ts";
+import {
+  AUTH_LIMIT,
+  IMPORT_LIMIT,
+  INVITE_LIMIT,
+  allowAttempt,
+  rateLimitMessage,
+} from "../../src/lib/auth/rate-limit.ts";
 
 const { rateLimits } = schema;
 
@@ -86,6 +92,40 @@ it("keys are independent, and invite windows are hourly and per workspace", asyn
   // And the hour has not rolled yet, while a minute has.
   assert.equal(await allowAttempt(h.db, a, INVITE_LIMIT, NOW + 60_000), false);
   assert.equal(await allowAttempt(h.db, a, INVITE_LIMIT, NOW + 3_600_000), true);
+});
+
+it("imports get twenty an hour per workspace, and the 21st writes nothing (US-45)", async () => {
+  const a = "imp:ws-imp-a";
+  const b = "imp:ws-imp-b";
+
+  for (let i = 0; i < 20; i++) {
+    assert.equal(await allowAttempt(h.db, a, IMPORT_LIMIT, NOW), true, `import ${i + 1}`);
+  }
+  assert.equal(await allowAttempt(h.db, a, IMPORT_LIMIT, NOW), false, "the 21st is refused");
+
+  const [row] = await rowFor(a);
+  assert.equal(row.count, 20, "the refused attempt never incremented the counter");
+
+  // Another workspace's hour is its own budget.
+  assert.equal(await allowAttempt(h.db, b, IMPORT_LIMIT, NOW), true);
+  // A minute passing rolls the auth window but not the hourly import one.
+  assert.equal(await allowAttempt(h.db, a, IMPORT_LIMIT, NOW + 60_000), false);
+  assert.equal(await allowAttempt(h.db, a, IMPORT_LIMIT, NOW + 3_600_000), true);
+});
+
+it("the one 429 sentence states the limit and when to retry (US-45)", () => {
+  assert.equal(
+    rateLimitMessage("percobaan", AUTH_LIMIT.windowMs),
+    "Terlalu banyak percobaan. Tunggu satu menit lalu coba lagi.",
+  );
+  assert.equal(
+    rateLimitMessage("percobaan", INVITE_LIMIT.windowMs),
+    "Terlalu banyak percobaan. Tunggu satu jam lalu coba lagi.",
+  );
+  assert.equal(
+    rateLimitMessage("impor", IMPORT_LIMIT.windowMs),
+    "Terlalu banyak impor. Tunggu satu jam lalu coba lagi.",
+  );
 });
 
 it("sweeps expired windows on the write path, so storage stays bounded", async () => {

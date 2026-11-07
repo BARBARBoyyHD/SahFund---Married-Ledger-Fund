@@ -23,7 +23,7 @@ export type DashboardSection =
   | "imports";
 
 const NAV = [
-  { key: "overview", href: "/dashboard", label: "Overview", icon: "grid" },
+  { key: "overview", href: "/dashboard", label: "Ringkasan", icon: "grid" },
   { key: "transaksi", href: "/dashboard/transaksi", label: "Transaksi", icon: "ledger" },
   { key: "laporan", href: "/dashboard/laporan", label: "Laporan", icon: "report" },
   { key: "anggaran", href: "/dashboard#anggaran", label: "Anggaran", icon: "wallet" },

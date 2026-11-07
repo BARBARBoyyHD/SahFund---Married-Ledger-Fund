@@ -190,7 +190,9 @@ export function AuthForm({ mode, next }: { mode: Mode; next?: string }) {
           aria-invalid={Boolean(fieldError("password"))}
           aria-describedby={
             mode === "sign-up"
-              ? "password-hint password-error"
+              ? fieldError("password")
+                ? "password-hint password-error"
+                : "password-hint"
               : fieldError("password")
                 ? "password-error"
                 : undefined

@@ -226,7 +226,7 @@ Notes:
 
 ## 7. Epic E3 — Statement Import
 
-### US-09 — Import a Bank Jago PDF statement (parsed on my device)
+### US-09 — Import a Bank Jago PDF statement (parsed on my device) ✅
 
 **As a** partner with a Jago e-statement, **I want** to select the PDF on my device and have its rows extracted in the browser, **so that** my statement file never leaves my device.
 
@@ -246,7 +246,7 @@ Notes:
 
 **Source:** BRD §3 In Scope (CSV/Excel via column mapping), BRD §4 FR-03; adapter parity per BRD §6 / ITA ADR-06. *PEP §10 cut candidate #3.*
 
-### US-11 — Choose the pocket and period
+### US-11 — Choose the pocket and period ✅
 
 **As a** partner importing a multi-pocket statement, **I want** to choose which pocket (e.g. "Kantong Nikah") and confirm the period, **so that** only the fund we care about is imported.
 
@@ -255,7 +255,7 @@ Notes:
 
 **Source:** BRD §4 FR-03 (pocket required, period optional/from document), BRD §9 import wireframe.
 
-### US-12 — Preview and commit an import
+### US-12 — Preview and commit an import ✅
 
 **As a** member, **I want** to see what an import contains before committing it, **so that** I never add rows blindly.
 
@@ -265,7 +265,7 @@ Notes:
 
 **Source:** BRD §4 FR-03 (validate → dedupe → persist → respond; max 5,000 rows), BRD §9; atomicity per ITA §2 / AGENTS.md §2.
 
-### US-13 — Re-importing a month is safe (idempotent)
+### US-13 — Re-importing a month is safe (idempotent) ✅
 
 **As a** member, **I want** to re-import a statement I already imported — or an overlapping month — **so that** my balances never double.
 
@@ -279,7 +279,7 @@ Notes:
 
 ## 8. Epic E4 — Reconciliation
 
-### US-14 — See the "Cocok dengan saldo bank" state
+### US-14 — See the "Cocok dengan saldo bank" state ✅
 
 **As a** member, **I want** my imported rows proven against the balance the bank printed, **so that** I trust the numbers before they enter reports.
 
@@ -288,7 +288,7 @@ Notes:
 
 **Source:** BRD §4 FR-04 (tolerances, green state).
 
-### US-15 — Understand and resolve a reconciliation failure
+### US-15 — Understand and resolve a reconciliation failure ✅
 
 **As a** member, **I want** to see exactly why the numbers do not match, **so that** I can fix my file or knowingly continue.
 
@@ -298,7 +298,7 @@ Notes:
 
 **Source:** BRD §4 FR-04, BRD §9 failure wireframe; persistence behaviour per ITA §2.
 
-### US-16 — The server independently re-verifies reconciliation
+### US-16 — The server independently re-verifies reconciliation ✅
 
 **As a** member, **I want** the server to re-run the same reconciliation math on the rows I post, **so that** a manipulated browser cannot fake a "Cocok" result.
 
@@ -307,7 +307,7 @@ Notes:
 
 **Source:** BRD §4 FR-04 (green state only when `ok`); server re-check per ITA §2, AGENTS.md §3/§7 ("never trust the client").
 
-### US-17 — Confirm a flagged import before it becomes final
+### US-17 — Confirm a flagged import before it becomes final ✅
 
 **As a** member, **I want** to explicitly confirm a non-reconciling import, **so that** suspect data only enters my reports when I say so.
 
@@ -594,7 +594,7 @@ Notes:
 
 **Source:** BRD §5 NFR-07 (graceful degradation, explicit error, no blank screen); behaviour per ITA §2, AGENTS.md §8.
 
-### US-44 — See exactly which line failed to parse
+### US-44 — See exactly which line failed to parse ✅
 
 **As a** member with a malformed file, **I want** the offending line surfaced and nothing half-saved, **so that** I can fix the file without corrupting my ledger.
 

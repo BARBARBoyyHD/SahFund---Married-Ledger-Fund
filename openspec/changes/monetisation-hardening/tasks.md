@@ -33,4 +33,4 @@
 ## 5. Close-out
 
 - [ ] 5.1 Mark US-35–42, US-45, US-47–51 ✅ (or list gaps) in `docs/projects/USER-STORIES.md`
-- [ ] 5.2 Resolve design open questions at review: purchase mechanism (B-3), export format (B-1), account-delete workspace path (B-5)
+- [x] 5.2 Resolve design open questions at review: purchase mechanism (B-3), export format (B-1), account-delete workspace path (B-5) *(B-1 and B-5 resolved 2026-11-08; B-3 remains open by decision — follow-up, not a blocker)*

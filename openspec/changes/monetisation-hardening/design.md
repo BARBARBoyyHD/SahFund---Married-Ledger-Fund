@@ -33,5 +33,5 @@ Entitlement, deletion, and the E12 quality pass are greenfield. Existing pieces 
 ## Open Questions
 
 - Purchase mechanism: license code vs Lynk.id order (Appendix B-3) — blocks only the thin grant-trigger adapter, not entitlement semantics.
-- Export file format (Appendix B-1): proposed machine-readable CSV (ISO dates, integer minor units) — confirm at review.
-- Account-delete + existing second-member workspace path (Appendix B-5): delete-with-it vs forced handover — confirm at review.
+- ~~Export file format (Appendix B-1)~~ — **RESOLVED 2026-11-08**: streamed CSV as implemented (`src/lib/ledger/export.ts`, export route): ISO dates `YYYY-MM-DD`, integer minor units, RFC-4180 quoting, header `occurredOn,description,amountMinor,balanceMinor,direction,ref`, workspace-scoped.
+- ~~Account-delete + existing second-member workspace path (Appendix B-5)~~ — **RESOLVED 2026-11-08**: delete-with-it with explicit mandatory confirmation (no handover in v1.0); UI copy warns other members lose access, server enforces `workspacePath` acknowledgment (409) — `src/lib/deletion.ts`, account route + delete-account panel.

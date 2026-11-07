@@ -12,7 +12,15 @@ import { DashboardSidebarToggle } from "./dashboard-sidebar-toggle";
  * and Forecast are real pages with `aria-current`; Anggaran stays a section anchor on
  * the dashboard until its own page exists.
  */
-export type DashboardSection = "overview" | "transaksi" | "laporan" | "komitmen" | "forecast";
+export type DashboardSection =
+  | "overview"
+  | "transaksi"
+  | "laporan"
+  | "komitmen"
+  | "forecast"
+  // No nav slot on purpose: a seventh item crowds the phone bar. Its entry point is the
+  // "Impor mutasi" action in the dashboard header.
+  | "imports";
 
 const NAV = [
   { key: "overview", href: "/dashboard", label: "Overview", icon: "grid" },

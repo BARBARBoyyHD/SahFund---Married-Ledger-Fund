@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 
 import { DIALOG_CLASS, DialogHeading } from "@/components/app/dialog";
@@ -55,6 +56,10 @@ export function DashboardActions({
         <Icon name="plus" className="h-4 w-4" />
         Tambah manual
       </button>
+      {/* The import page's entry point: the nav has no seventh slot (phone bar). */}
+      <Link href="/dashboard/imports" className={BUTTON_SMALL}>
+        Impor mutasi
+      </Link>
       <button
         type="button"
         aria-haspopup="dialog"

@@ -20,16 +20,16 @@
 
 ## 4. Import UI (client leaves only)
 
-- [ ] 4.1 Import page: file input + dynamic pdf.js import (never in root bundle), on-device parse, preview of normalised rows — US-09
-- [ ] 4.2 CSV/XLSX column-mapping step reusing the same preview flow — US-10 *(PEP §10 cut candidate — defer first)*
-- [ ] 4.3 Pocket picker + period pre-fill/override; totals scoped to selected pocket — US-11
-- [ ] 4.4 Preview: reconciliation banner (green "Cocok dengan saldo bank" with Saldo awal/Masuk/Keluar/Saldo akhir, or issues-by-kind list with offending line + Batal/lanjut), "N transaksi baru · M duplikat" counts, 5,000-row error — US-12, US-14, US-15
-- [ ] 4.5 Parse-failure state: offending line + Bahasa Indonesia reason, nothing persisted, retry works — US-44
-- [ ] 4.6 Flagged import banner + explicit confirm action ("belum cocok" stays visible) — US-17
+- [x] 4.1 Import page: file input + dynamic pdf.js import (never in root bundle), on-device parse, preview of normalised rows — US-09
+- [x] 4.2 CSV/XLSX column-mapping step reusing the same preview flow — US-10 *(PEP §10 cut candidate — defer first)* — **CSV path shipped**; `.xlsx` shows a clear "ekspor dulu sebagai CSV" message (no spreadsheet dependency added, per this change's no-new-dependency rule)
+- [x] 4.3 Pocket picker + period pre-fill/override; totals scoped to selected pocket — US-11
+- [x] 4.4 Preview: reconciliation banner (green "Cocok dengan saldo bank" with Saldo awal/Masuk/Keluar/Saldo akhir, or issues-by-kind list with offending line + Batal/lanjut), "N transaksi baru · M duplikat" counts, 5,000-row error — US-12, US-14, US-15
+- [x] 4.5 Parse-failure state: offending line + Bahasa Indonesia reason, nothing persisted, retry works — US-44
+- [x] 4.6 Flagged import banner + explicit confirm action ("belum cocok" stays visible) — US-17
 
 ## 5. States, a11y, verification
 
-- [ ] 5.1 Loading/empty/error+retry/success states on the import screen; labels, keyboard path, `aria-live` errors (AGENTS.md §6, NFR-08)
+- [x] 5.1 Loading/empty/error+retry/success states on the import screen; labels, keyboard path, `aria-live` errors (AGENTS.md §6, NFR-08)
 - [ ] 5.2 Four-state + keyboard-only manual walkthrough; typecheck + unit + integration tests green (AGENTS.md §11)
 - [ ] 5.3 Verify no file bytes reach server/storage/logs (grep handlers for content logging; NFR-01) — US-09, US-41-adjacent
 - [ ] 5.4 Mark US-09, US-11–17, US-44 (and US-10 if built) ✅ in `docs/projects/USER-STORIES.md`

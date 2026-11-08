@@ -4,6 +4,12 @@ import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Caching (Next 16 model). Static HTML and hashed assets are CDN-cached — `/` ships
+  // `s-maxage=31536000`, `/_next/static/*` is `immutable`. `cacheComponents` prerenders a
+  // static shell per route and `partialPrefetching` prefetches it per session, so client
+  // navigations reuse that shell. Nothing user-scoped opts into `use cache`/`cacheLife`:
+  // a cached dashboard would show pre-mutation money, a cached `/r/[token]` would keep a
+  // revoked link alive, and the Worker has no KV/R2 cache handler by design (ITA ADR-13).
   cacheComponents: true,
   partialPrefetching: true,
   reactCompiler: true,

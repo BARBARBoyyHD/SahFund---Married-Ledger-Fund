@@ -29,6 +29,27 @@
       "when": 1793877887232,
       "tag": "0003_wooden_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794048061006,
+      "tag": "0004_bent_secret_warriors",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1794048661617,
+      "tag": "0005_chilly_sister_grimm",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1794049658117,
+      "tag": "0006_mute_zaladane",
+      "breakpoints": true
     }
   ]
 }

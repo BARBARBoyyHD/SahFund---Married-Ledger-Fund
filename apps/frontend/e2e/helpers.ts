@@ -80,19 +80,42 @@ export async function signUp(page: Page, name: string, email: string) {
   await page.waitForURL(/\/workspaces\/new$/, { timeout: 30_000 });
 }
 
-/** US-05: create the workspace from the UI; returns its id and the pocket code shown. */
+/**
+ * US-05: create the workspace from the UI; returns its id and pocket code.
+ *
+ * The URL no longer carries the workspace id (design D11 revised: one `/dashboard`), so
+ * the creation response — the same body the form just consumed — is the source for both.
+ */
 export async function createWorkspace(page: Page, name: string) {
   await waitForInteractive(page, "#budgetTarget");
   await page.getByLabel(/nama workspace/i).fill(name);
+
+  const created = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" && new URL(response.url()).pathname === "/api/workspaces",
+  );
   await page.getByRole("button", { name: /buat workspace/i }).click();
-  await page.waitForURL(/\/w\/[0-9a-f-]+$/, { timeout: 30_000 });
+  await page.waitForURL(/\/dashboard$/, { timeout: 30_000 });
+
+  const { id, inviteCode } = (await (await created).json()) as {
+    id: string;
+    inviteCode: string;
+  };
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
 
-  // The code is read from the join link's `code` param, not from the styled paragraph,
-  // so the assertion does not depend on a Tailwind class.
-  const href = await page.locator('a[href^="/join?code="]').first().getAttribute("href");
-  const code = new URL(href ?? "/", page.url()).searchParams.get("code");
-  if (!code) throw new Error("the workspace shell did not render a join link");
+  return { workspaceId: id, code: inviteCode };
+}
 
-  return { workspaceId: new URL(page.url()).pathname.split("/").pop() ?? "", code };
+/**
+ * US-07/US-52: the dashboard keeps the invite panel in a native `<dialog>` — the code,
+ * the join link, the email form and the rotate button are all inside it.
+ */
+export async function openInvite(page: Page) {
+  const trigger = page.getByRole("button", { name: /^undang pasangan$/i });
+  await waitForHydrated(trigger);
+  await trigger.click();
+
+  const dialog = page.getByRole("dialog", { name: /undang pasangan/i });
+  await expect(dialog).toBeVisible();
+  return dialog;
 }

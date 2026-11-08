@@ -1,8 +1,9 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { NextResponse } from "next/server";
 
+import { INVITE_LIMIT } from "@/lib/auth/rate-limit";
 import { getDb } from "@/lib/db";
-import { invalid, logFailure, unavailable } from "@/lib/http";
+import { invalid, logFailure, rateLimited, unavailable } from "@/lib/http";
 import { membershipForApi } from "@/lib/membership";
 import { WORKSPACE_MESSAGE } from "@/lib/workspace/messages";
 import { inviteSchema } from "@/lib/workspace/schema";
@@ -44,10 +45,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           joinUrl: result.joinUrl,
         });
       case "rate-limited":
-        return NextResponse.json(
-          { message: WORKSPACE_MESSAGE.rateLimited },
-          { status: 429, headers: { "retry-after": "3600" } },
-        );
+        return rateLimited("percobaan", INVITE_LIMIT.windowMs);
       default:
         return unavailable();
     }

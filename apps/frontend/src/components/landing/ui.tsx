@@ -59,7 +59,7 @@ export const BUTTON_SECONDARY =
 
 /** 44px field on any surface. Pair with `border-gold-line focus:border-emerald` (or danger). */
 export const INPUT =
-  "h-11 w-full rounded-sm border bg-surface px-3 text-body text-ink outline-none transition-colors placeholder:text-ink-muted/70 focus:ring-2 focus:ring-emerald/25";
+  "h-11 w-full rounded-sm border bg-surface px-3 text-body text-ink outline-none transition-colors placeholder:text-ink-muted focus:ring-2 focus:ring-emerald/60";
 
 /** Inline gold underline that grows on hover — used for links on the dark field. */
 export const TEXT_LINK_ON_EMERALD =

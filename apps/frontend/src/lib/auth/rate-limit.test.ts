@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { Db } from "../db/index.ts";
-import { AUTH_LIMIT, allowAttempt, clientKey, windowFor } from "./rate-limit.ts";
+import { AUTH_LIMIT, allowAttempt, clientKey, rateLimitMessage, windowFor } from "./rate-limit.ts";
 
 test("clientKey prefers the edge IP and falls back to unknown", () => {
   assert.equal(
@@ -26,6 +26,22 @@ test("windows are aligned to the epoch, so every isolate derives the same bounds
     windowStart: 3_600_000,
     expiresAt: 7_200_000,
   });
+});
+
+test("the 429 sentence names the limit and when to retry (US-45)", () => {
+  assert.equal(
+    rateLimitMessage("percobaan", AUTH_LIMIT.windowMs),
+    "Terlalu banyak percobaan. Tunggu satu menit lalu coba lagi.",
+  );
+  assert.equal(
+    rateLimitMessage("impor", 3_600_000),
+    "Terlalu banyak impor. Tunggu satu jam lalu coba lagi.",
+  );
+  // An unforeseen window still reads as a sentence, never as raw milliseconds.
+  assert.equal(
+    rateLimitMessage("impor", 30_000),
+    "Terlalu banyak impor. Tunggu 1 menit lalu coba lagi.",
+  );
 });
 
 test("an unreachable counter fails open and logs no key (design D3)", async () => {

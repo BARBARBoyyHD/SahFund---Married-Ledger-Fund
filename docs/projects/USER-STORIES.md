@@ -226,7 +226,7 @@ Notes:
 
 ## 7. Epic E3 — Statement Import
 
-### US-09 — Import a Bank Jago PDF statement (parsed on my device)
+### US-09 — Import a Bank Jago PDF statement (parsed on my device) ✅
 
 **As a** partner with a Jago e-statement, **I want** to select the PDF on my device and have its rows extracted in the browser, **so that** my statement file never leaves my device.
 
@@ -246,7 +246,7 @@ Notes:
 
 **Source:** BRD §3 In Scope (CSV/Excel via column mapping), BRD §4 FR-03; adapter parity per BRD §6 / ITA ADR-06. *PEP §10 cut candidate #3.*
 
-### US-11 — Choose the pocket and period
+### US-11 — Choose the pocket and period ✅
 
 **As a** partner importing a multi-pocket statement, **I want** to choose which pocket (e.g. "Kantong Nikah") and confirm the period, **so that** only the fund we care about is imported.
 
@@ -255,7 +255,7 @@ Notes:
 
 **Source:** BRD §4 FR-03 (pocket required, period optional/from document), BRD §9 import wireframe.
 
-### US-12 — Preview and commit an import
+### US-12 — Preview and commit an import ✅
 
 **As a** member, **I want** to see what an import contains before committing it, **so that** I never add rows blindly.
 
@@ -265,7 +265,7 @@ Notes:
 
 **Source:** BRD §4 FR-03 (validate → dedupe → persist → respond; max 5,000 rows), BRD §9; atomicity per ITA §2 / AGENTS.md §2.
 
-### US-13 — Re-importing a month is safe (idempotent)
+### US-13 — Re-importing a month is safe (idempotent) ✅
 
 **As a** member, **I want** to re-import a statement I already imported — or an overlapping month — **so that** my balances never double.
 
@@ -279,7 +279,7 @@ Notes:
 
 ## 8. Epic E4 — Reconciliation
 
-### US-14 — See the "Cocok dengan saldo bank" state
+### US-14 — See the "Cocok dengan saldo bank" state ✅
 
 **As a** member, **I want** my imported rows proven against the balance the bank printed, **so that** I trust the numbers before they enter reports.
 
@@ -288,7 +288,7 @@ Notes:
 
 **Source:** BRD §4 FR-04 (tolerances, green state).
 
-### US-15 — Understand and resolve a reconciliation failure
+### US-15 — Understand and resolve a reconciliation failure ✅
 
 **As a** member, **I want** to see exactly why the numbers do not match, **so that** I can fix my file or knowingly continue.
 
@@ -298,7 +298,7 @@ Notes:
 
 **Source:** BRD §4 FR-04, BRD §9 failure wireframe; persistence behaviour per ITA §2.
 
-### US-16 — The server independently re-verifies reconciliation
+### US-16 — The server independently re-verifies reconciliation ✅
 
 **As a** member, **I want** the server to re-run the same reconciliation math on the rows I post, **so that** a manipulated browser cannot fake a "Cocok" result.
 
@@ -307,7 +307,7 @@ Notes:
 
 **Source:** BRD §4 FR-04 (green state only when `ok`); server re-check per ITA §2, AGENTS.md §3/§7 ("never trust the client").
 
-### US-17 — Confirm a flagged import before it becomes final
+### US-17 — Confirm a flagged import before it becomes final ✅
 
 **As a** member, **I want** to explicitly confirm a non-reconciling import, **so that** suspect data only enters my reports when I say so.
 
@@ -321,7 +321,7 @@ Notes:
 
 ## 9. Epic E5 — Ledger & Manual Entry
 
-### US-18 — Browse the ledger
+### US-18 — Browse the ledger ✅
 
 **As a** member, **I want** to browse all transactions chronologically, **so that** I can see where the money went.
 
@@ -331,7 +331,7 @@ Notes:
 
 **Source:** BRD §4 FR-05; performance/rendering per AGENTS.md §6.
 
-### US-19 — Filter and search the ledger
+### US-19 — Filter and search the ledger ✅
 
 **As a** member, **I want** to filter by date range, category, member, and direction, and search by keyword, **so that** I can answer "how much did we spend on catering?" quickly.
 
@@ -341,7 +341,9 @@ Notes:
 
 **Source:** BRD §4 FR-05 (query parameters); URL-as-state per AGENTS.md §6.
 
-### US-20 — Re-categorise or reassign a transaction
+- **Known edge case (walkthrough, 2026-11-08):** the keyword is passed to SQL `LIKE` unescaped, so a literal `%` or `_` typed in the search box acts as a wildcard (`src/lib/ledger/list.ts:93` carries the `shortcut:` note). Filters, ordering, pagination and URL round-tripping themselves are verified in `listTransactions`.
+
+### US-20 — Re-categorise or reassign a transaction ✅
 
 **As a** member, **I want** to correct a transaction's category or attributed member, **so that** one mis-parsed row does not distort a report.
 
@@ -351,7 +353,9 @@ Notes:
 
 **Source:** BRD §4 FR-05 (PATCH), FR-06 (correction offered as rule).
 
-### US-21 — Add a manual transaction (cash and other-bank payments)
+- **Gap (walkthrough, 2026-11-08):** AC3 is not implemented — a category correction is never offered as a payee rule, because US-23 is deferred (openspec task 4.7, PEP §10 cut candidate #4, owner decision). AC1 (imported rows: category/member only, recomputed on refresh) and AC2 (member change flows into the contribution aggregate) are met.
+
+### US-21 — Add a manual transaction (cash and other-bank payments) ✅
 
 **As a** member, **I want** to record cash expenses and payments made outside the imported statement, **so that** the ledger reflects reality even though no bank API exists.
 
@@ -361,11 +365,13 @@ Notes:
 
 **Source:** BRD §4 FR-05 (POST manual, field defaults); dedupe for manual entry per AGENTS.md §7.
 
+- **Gap (walkthrough, 2026-11-08):** AC2 holds only for manual-vs-manual. The pinned tuple is `date | time | amountMinor | balanceMinor | ref`; a manual row stores `time = ""`, `balanceMinor = 0`, `ref = ""`, while an imported row carries the statement's time, printed balance and reference. So a manual row "identical" to an imported one (same date + amount) produces a different hash and **is stored as a second row** instead of being refused. The opposite also holds: two manual rows with the same date + amount but different descriptions *do* collide (no row is lost, but the second has to change its date/amount). Both directions are the documented tuple shortcut in `src/lib/ledger/service.ts:88`; integration coverage is manual↔manual (`test/integration/reporting.test.ts`).
+
 ---
 
 ## 10. Epic E6 — Categories & Rules
 
-### US-22 — Start with a seeded Indonesian wedding category set
+### US-22 — Start with a seeded Indonesian wedding category set ✅
 
 **As a** partner creating a workspace, **I want** sensible wedding categories from day one, **so that** I am not staring at an empty taxonomy.
 
@@ -373,6 +379,8 @@ Notes:
 - **Given** the seeded categories, **When** I rename or add a category, **Then** names remain unique within the workspace (a duplicate name is rejected with a clear message).
 
 **Source:** BRD §4 FR-06; uniqueness per AGENTS.md §3.
+
+- **Gap (walkthrough, 2026-11-08):** the ten seeded categories are created with the workspace (integration-tested). Uniqueness is enforced by `UNIQUE (workspaceId, name)` and mapped to the clear 409 message — but only on the rename path (`PATCH /api/workspaces/:id/categories/:categoryId`); there is **no UI to rename a category and no endpoint or UI to add one**, so AC2's "rename or add" is reachable through the API only, not for an end user in this change.
 
 ### US-23 — Turn a category correction into a payee rule
 
@@ -388,7 +396,7 @@ Notes:
 
 ## 11. Epic E7 — Reporting & Forecast
 
-### US-24 — Bulk-attribute transactions to a partner
+### US-24 — Bulk-attribute transactions to a partner ✅
 
 **As a** member, **I want** to assign a member to many rows at once ("these 12 deposits are Ayu's"), **so that** attribution does not take an hour of clicking.
 
@@ -397,7 +405,7 @@ Notes:
 
 **Source:** BRD §4 FR-07.
 
-### US-25 — See per-member contributions
+### US-25 — See per-member contributions ✅
 
 **As a** member (or the owner presenting to family), **I want** money in, money out, and net position per partner, **so that** "who put in what" is settled by data, not memory.
 
@@ -406,7 +414,7 @@ Notes:
 
 **Source:** BRD §4 FR-07; exactness per BRD §5 NFR-03.
 
-### US-26 — Set per-category budgets
+### US-26 — Set per-category budgets ✅
 
 **As a** member, **I want** to set a budget for each category, **so that** spending has a ceiling to compare against.
 
@@ -415,7 +423,7 @@ Notes:
 
 **Source:** BRD §3 In Scope ("Categories with per-category budgets"), BRD §4 FR-08.
 
-### US-27 — Read the budget-vs-actual report
+### US-27 — Read the budget-vs-actual report ✅
 
 **As a** member, **I want** budget, committed, paid, and remaining per category plus a totals row, **so that** I know where we stand without opening a spreadsheet.
 
@@ -425,7 +433,9 @@ Notes:
 
 **Source:** BRD §4 FR-08, BRD §9 report wireframe.
 
-### US-28 — Add a vendor commitment (DP and pelunasan)
+- **Interpretation gap (walkthrough, 2026-11-08):** the four figures are present and over-budget is rendered unclamped (`+Rp …`), totals included. But "Terbayar" is the DP/pelunasan recorded on **vendor commitments only** — ledger spend per category is *not* in this table (it lives in the contribution report, and the report copy says so twice). BRD FR-08 does not define "paid", so this is a decision, not a bug: the consequence is that a category can be over its budget in actual money out while this table still shows a positive "Sisa", as long as no commitment payment was recorded for it. Needs an owner call on whether FR-08's "paid" means commitment payments or actual ledger spend.
+
+### US-28 — Add a vendor commitment (DP and pelunasan) ✅
 
 **As a** member, **I want** to record a vendor contract with total, DP paid, and due date, **so that** future obligations are counted even before money moves.
 
@@ -443,7 +453,7 @@ Notes:
 
 **Source:** BRD §4 FR-09 ("dashboard lists the next due dates").
 
-### US-30 — Surface payments counted twice
+### US-30 — Surface payments counted twice ✅
 
 **As a** member, **I want** a payment that appears both as a ledger transaction and as commitment `paid` to be visibly reconciled, **so that** my totals are never double-counted.
 
@@ -451,6 +461,8 @@ Notes:
 - **Given** the surfaced duplication, **When** I review it, **Then** the report state makes clear which figure is included in totals.
 
 **Source:** BRD §4 FR-09 ("must be visibly reconciled"). Exact UX undefined — see Appendix B-2.
+
+- **Limitation (walkthrough, 2026-11-08):** the notice appears in the report and states which figure counts (Terbayar from commitments; the matching ledger row stays out of that column). The matcher compares the commitment's running `paid` **total** against a single ledger money-out row of the same magnitude, with an unbounded date window because commitments store no payment date. So it produces both false positives (any same-amount payment in the ledger) and false negatives (a contract paid in two instalments matches neither). It is a suggestion only — nothing is merged, adjusted or dropped silently.
 
 ### US-31 — Get the funded-or-shortfall forecast ✅
 
@@ -466,7 +478,7 @@ Notes:
 
 ## 12. Epic E8 — Share Report
 
-### US-32 — Create a read-only share link
+### US-32 — Create a read-only share link ✅
 
 **As a** workspace owner, **I want** to generate an expiring, revocable read-only link, **so that** family or the wedding organizer can see progress without an account.
 
@@ -475,7 +487,9 @@ Notes:
 
 **Source:** BRD §4 FR-11, BRD §3 In Scope. Default TTL undefined — see Appendix B-4.
 
-### US-33 — View a shared report without an account
+- **Verification (walkthrough, 2026-11-08):** owner-only create confirmed on both layers (403 for a member or non-member in `share-tokens/route.ts`; the section is only rendered for `role === "owner"`), 30-day expiry from `share/token.ts`, URL returned as `/r/:token`. Token lifecycle is integration-tested; the browser flow was not driven live.
+
+### US-33 — View a shared report without an account ✅
 
 **As a** family member or wedding organizer (shared viewer), **I want** to open the link and read the report, **so that** I can follow the budget without being given a login.
 
@@ -485,7 +499,9 @@ Notes:
 
 **Source:** BRD §4 FR-11.
 
-### US-34 — Revoke a share link
+- **Verification (walkthrough, 2026-11-08):** code-path verified — no session anywhere on `/r/:token`, no `transactions.description`, no member or row ids in any shared-page query, and the page is read-only (no form, no mutation handler). Unknown / expired / revoked all return the same `ShareUnavailable` page (`resolve-token.ts`). Live smoke from this environment was blocked: `next dev` cannot resolve the Cloudflare D1 binding without `CLOUDFLARE_API_TOKEN`, so `/r/not-a-token` streamed the shell and then hit its error boundary; the prior round's live smoke is the browser-level evidence.
+
+### US-34 — Revoke a share link ✅
 
 **As a** workspace owner, **I want** to revoke a share link, **so that** access ends the moment I say so.
 
@@ -498,7 +514,7 @@ Notes:
 
 ## 13. Epic E9 — Entitlement & Purchase
 
-### US-35 — Understand the free tier's limits
+### US-35 — Understand the free tier's limits ✅
 
 **As a** prospective user, **I want** the dashboard to work with one free import and to clearly show what unlocking adds, **so that** I can evaluate before paying.
 
@@ -508,7 +524,7 @@ Notes:
 
 **Source:** BRD §4 FR-12 (free state).
 
-### US-36 — See the one-time price
+### US-36 — See the one-time price ✅
 
 **As a** prospective user, **I want** a pricing page stating one price for the whole wedding, **so that** there are no subscription surprises.
 
@@ -517,7 +533,7 @@ Notes:
 
 **Source:** BRD §4 FR-12 (price), BRD §7 Phase 4 (pricing page), BRD §8 (billing model). *PEP §10 cut candidate #2.*
 
-### US-37 — Buy once and unlock the workspace
+### US-37 — Buy once and unlock the workspace ✅
 
 **As a** partner ready to pay, **I want** a one-time purchase that unlocks unlimited imports and export for our workspace, **so that** we pay once and the product keeps working until the wedding.
 
@@ -527,7 +543,7 @@ Notes:
 
 **Source:** BRD §4 FR-12 (paid state, price, one-time charge); idempotency per ITA §6, AGENTS.md §3. Purchase mechanism undecided — see Appendix B-3.
 
-### US-38 — Export my data
+### US-38 — Export my data ✅
 
 **As a** workspace owner, **I want** to export our transaction rows once paid, **so that** I own a copy of my data before I delete anything.
 
@@ -541,7 +557,7 @@ Notes:
 
 ## 14. Epic E10 — Deletion & Privacy
 
-### US-39 — Delete a workspace
+### US-39 — Delete a workspace ✅
 
 **As a** workspace owner, **I want** to delete our workspace, **so that** our financial history is erased when we are done (or on request).
 
@@ -549,9 +565,9 @@ Notes:
 - **Given** a deleted workspace, **When** backups age out, **Then** the data is purged from backups within 30 days.
 - **Given** a non-owner, **When** they attempt workspace deletion, **Then** the action is refused.
 
-**Source:** BRD §4 FR-12 (deletion), BRD §5 NFR-06 (purge ≤ 30 days), BRD §3 In Scope; cascade per ITA §5/§7. Owner-only restriction: Appendix B-6.
+**Source:** BRD §4 FR-12 (deletion), BRD §5 NFR-06 (purge ≤ 30 days), BRD §3 In Scope; cascade per ITA §5/§7. Owner-only restriction: Appendix B-6. *Backup purge is the documented ≤ 30-day operational procedure (`docs/projects/RUNBOOK-backup-purge.md`), not an automated job.*
 
-### US-40 — Delete my account
+### US-40 — Delete my account ✅
 
 **As a** user, **I want** to delete my account, **so that** my personal data is not kept after I leave (Indonesian PDP law).
 
@@ -559,9 +575,9 @@ Notes:
 - **Given** an account that owns a workspace, **When** it is deleted, **Then** the workspace follows an explicit, stated path (deleted with it, or clearly handed over) — never left silently broken for the other member.
 - **Given** a deletion request, **When** it is processed, **Then** the purge completes within the 30-day backup window stated by NFR-06.
 
-**Source:** BRD §3 In Scope ("Account and workspace deletion"), BRD §5 NFR-06. Side-effect semantics undefined — see Appendix B-5.
+**Source:** BRD §3 In Scope ("Account and workspace deletion"), BRD §5 NFR-06. Side-effect semantics undefined — see Appendix B-5. *Backup purge likewise covered by the documented procedure in `docs/projects/RUNBOOK-backup-purge.md` (not automated).*
 
-### US-41 — No statement file, image, or avatar of mine is ever stored
+### US-41 — No statement file, image, or avatar of mine is ever stored ✅
 
 **As a** privacy-conscious member, **I want** a product that stores only normalised rows, **so that** there are no documents to breach, leak, or retain.
 
@@ -571,7 +587,7 @@ Notes:
 
 **Source:** BRD §5 NFR-01, BRD §4 FR-03 ("never uploaded, never stored, never logged"), BRD §8 (document storage: none), ITA ADR-08.
 
-### US-42 — My financial details stay out of system logs
+### US-42 — My financial details stay out of system logs ✅
 
 **As a** member, **I want** operational logs to carry no amounts or row contents, **so that** routine monitoring can never expose our finances.
 
@@ -594,7 +610,7 @@ Notes:
 
 **Source:** BRD §5 NFR-07 (graceful degradation, explicit error, no blank screen); behaviour per ITA §2, AGENTS.md §8.
 
-### US-44 — See exactly which line failed to parse
+### US-44 — See exactly which line failed to parse ✅
 
 **As a** member with a malformed file, **I want** the offending line surfaced and nothing half-saved, **so that** I can fix the file without corrupting my ledger.
 
@@ -604,7 +620,7 @@ Notes:
 
 **Source:** BRD §4 FR-03 (validate step); failure behaviour per ITA §2, AGENTS.md §8.
 
-### US-45 — Get a clear message when rate limited
+### US-45 — Get a clear message when rate limited ✅
 
 **As a** user hitting a limit, **I want** to be told plainly that I am rate limited and when to retry, **so that** I never see a mysterious dead button.
 
@@ -627,7 +643,7 @@ Notes:
 
 ## 16. Epic E12 — Accessibility, Localisation & Performance
 
-### US-47 — Exact money arithmetic and display
+### US-47 — Exact money arithmetic and display ✅
 
 **As a** member, **I want** every amount stored and summed exactly, **so that** reconciliation and totals are never off by rounding.
 
@@ -637,7 +653,7 @@ Notes:
 
 **Source:** BRD §5 NFR-03, BRD §4 FR-04.
 
-### US-48 — Bahasa Indonesia first, IDR and id-ID formatting everywhere
+### US-48 — Bahasa Indonesia first, IDR and id-ID formatting everywhere ✅
 
 **As an** Indonesian user, **I want** the whole product in Bahasa Indonesia with rupiah and dates in local format, **so that** I read amounts correctly at a glance.
 
@@ -647,7 +663,7 @@ Notes:
 
 **Source:** BRD §5 NFR-09; wording per BRD §9, AGENTS.md §6.
 
-### US-49 — Use the whole product with a keyboard and assistive tech (WCAG 2.2 AA)
+### US-49 — Use the whole product with a keyboard and assistive tech (WCAG 2.2 AA) ✅
 
 **As a** keyboard or screen-reader user, **I want** every interactive screen to meet WCAG 2.2 AA, **so that** I can manage our fund without a mouse.
 
@@ -657,7 +673,7 @@ Notes:
 
 **Source:** BRD §5 NFR-08; specifics per AGENTS.md §6.
 
-### US-50 — Every screen has loading, empty, error, and success states
+### US-50 — Every screen has loading, empty, error, and success states ✅
 
 **As a** member on a flaky connection, **I want** each screen to always tell me what is happening, **so that** I am never left staring at a blank page.
 
@@ -668,7 +684,9 @@ Notes:
 
 **Source:** BRD §5 NFR-07 (explicit error, no blank screen); state inventory per AGENTS.md §6.
 
-### US-51 — Fast on a 4G phone
+### US-51 — Fast on a 4G phone ✅
+
+*Structural checks (pdf.js dynamic-only, ledger server-paginated) and LOCAL dev timings are recorded in `openspec/changes/monetisation-hardening/evidence/4.5-performance.md`; the 4G p95 budgets (dashboard ≤ 1.5 s, import ≤ 5 s) are **not yet measured on preview** — no preview deploy exists (PEP M1 deploy task unchecked).*
 
 **As a** member checking the fund on mobile data, **I want** the dashboard and import to be quick, **so that** the product beats the spreadsheet it replaces.
 

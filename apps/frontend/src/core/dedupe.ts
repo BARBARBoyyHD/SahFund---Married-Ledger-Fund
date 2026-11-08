@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import { transactionTuple } from "./statement.ts";
+
 /**
  * The one dedupe implementation (AGENTS §3/§7). The tuple is pinned by ERD §5 and
  * ITA §5: `sha256(workspaceId | date | time | amountMinor | balanceMinor | ref)`.
@@ -23,17 +25,10 @@ export type DedupeInput = {
   ref: string;
 };
 
-export function dedupeHash({
-  workspaceId,
-  date,
-  time,
-  amountMinor,
-  balanceMinor,
-  ref,
-}: DedupeInput): string {
+export function dedupeHash(input: DedupeInput): string {
+  // Field order lives in `core/statement.ts#transactionTuple`; the workspace prefix is
+  // what makes the same statement safe to import into two different workspaces.
   return createHash("sha256")
-    .update(
-      [workspaceId, date, time, String(amountMinor), String(balanceMinor), ref].join("|"),
-    )
+    .update(`${input.workspaceId}|${transactionTuple(input)}`)
     .digest("hex");
 }

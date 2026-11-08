@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import Link from "next/link";
+import { useRef, useState } from "react";
 
 import { DIALOG_CLASS, DialogHeading } from "@/components/app/dialog";
 import { BUTTON_SMALL } from "@/components/app/ui";
+import { DeleteAccountPanel } from "./delete-account-panel";
 import { DetailsForm } from "./details-form";
 import { Icon } from "./dashboard-icons";
 import { InvitePanel } from "./invite-panel";
@@ -39,6 +41,9 @@ export function DashboardActions({
   const manualDialog = useRef<HTMLDialogElement>(null);
   const inviteDialog = useRef<HTMLDialogElement>(null);
   const settingsDialog = useRef<HTMLDialogElement>(null);
+  // Remounts the delete panel on each open, so a half-confirmed destructive form never
+  // survives a close (the acknowledgements are a deliberate second action).
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   function closeOnBackdrop(event: React.MouseEvent<HTMLDialogElement>) {
     if (event.target === event.currentTarget) event.currentTarget.close();
@@ -55,6 +60,10 @@ export function DashboardActions({
         <Icon name="plus" className="h-4 w-4" />
         Tambah manual
       </button>
+      {/* The import page's entry point: the nav has no seventh slot (phone bar). */}
+      <Link href="/dashboard/imports" className={BUTTON_SMALL}>
+        Impor mutasi
+      </Link>
       <button
         type="button"
         aria-haspopup="dialog"
@@ -67,7 +76,10 @@ export function DashboardActions({
         type="button"
         aria-haspopup="dialog"
         className={BUTTON_SMALL}
-        onClick={() => settingsDialog.current?.showModal()}
+        onClick={() => {
+          setSettingsOpen(true);
+          settingsDialog.current?.showModal();
+        }}
       >
         Pengaturan
       </button>
@@ -126,11 +138,12 @@ export function DashboardActions({
         aria-labelledby="pengaturan-judul"
         className={DIALOG_CLASS}
         onClick={closeOnBackdrop}
+        onClose={() => setSettingsOpen(false)}
       >
         <DialogHeading
           id="pengaturan-judul"
           title="Pengaturan"
-          description="Tanggal pernikahan dan target anggaran bisa diubah kapan saja."
+          description="Tanggal pernikahan, target anggaran, dan penghapusan akun."
           onClose={() => settingsDialog.current?.close()}
         />
         <div className="mt-5">
@@ -139,6 +152,7 @@ export function DashboardActions({
             initialWeddingDate={initialWeddingDate}
             initialBudget={initialBudget}
           />
+          {settingsOpen ? <DeleteAccountPanel /> : null}
         </div>
       </dialog>
     </>

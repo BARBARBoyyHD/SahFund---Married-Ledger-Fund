@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ZodError } from "zod";
 
+import { rateLimitMessage } from "@/lib/auth/rate-limit";
 import { fieldErrors } from "@/lib/validation";
 
 /**
@@ -27,12 +28,33 @@ export function unauthenticated() {
   );
 }
 
+/** 403 when a free workspace hits a paid-only action; the UI renders `message` verbatim. */
+export function locked(message: string) {
+  return NextResponse.json({ message }, { status: 403 });
+}
+
+/** 429 for a spent NFR-02 window (US-45): the limit and the retry timing, rendered verbatim. */
+export function rateLimited(what: string, windowMs: number) {
+  return NextResponse.json(
+    { message: rateLimitMessage(what, windowMs) },
+    { status: 429, headers: { "retry-after": String(Math.ceil(windowMs / 1000)) } },
+  );
+}
+
 /** 503 when the database or another dependency is unavailable — never a blank screen. */
 export function unavailable() {
   return NextResponse.json(
     { message: "Layanan sedang tidak tersedia. Coba lagi sebentar lagi." },
     { status: 503 },
   );
+}
+
+/**
+ * The one route log line (design D5, US-42): route, status and workspace id, nothing
+ * else. Used where an outcome is worth evidence — a refusal or a deletion — never a row.
+ */
+export function logRoute(route: string, status: number, workspaceId?: string | null) {
+  console.info("[api] route", { route, status, ...(workspaceId ? { workspaceId } : {}) });
 }
 
 export function logFailure(route: string, error: unknown) {

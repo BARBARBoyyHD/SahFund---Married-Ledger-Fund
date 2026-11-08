@@ -36,7 +36,26 @@ const PATHS = {
       <path d="M17 7h4v4" />
     </>
   ),
+  report: (
+    <>
+      <path d="M4 4v16h16" />
+      <path d="M8 17v-4M13 17v-8M18 17V5" />
+    </>
+  ),
   plus: <path d="M12 5v14M5 12h14" />,
+  edit: (
+    <>
+      <path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z" />
+      <path d="M13.5 6.5l4 4" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M4 7h16M9 7V4h6v3" />
+      <path d="M6 7l1 13h10l1-13" />
+      <path d="M10 11v5M14 11v5" />
+    </>
+  ),
   collapse: (
     <>
       <path d="M11 17l-5-5 5-5" />

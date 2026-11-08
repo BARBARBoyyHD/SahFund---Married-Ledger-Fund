@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createCommitmentSchema } from "./commitment-schema.ts";
+import { createCommitmentSchema, updateCommitmentSchema } from "./commitment-schema.ts";
 
 /**
  * US-28 / BRD FR-09: the form and the handler share this schema. Money is stored as
@@ -102,4 +102,40 @@ test("a vendor over 120 characters is rejected", () => {
     parsed.success === false && parsed.error.issues[0]?.message,
     "Nama vendor maksimal 120 karakter.",
   );
+});
+
+test("a settlement update derives status from total and paid", () => {
+  const partial = updateCommitmentSchema.safeParse({ total: "30.000.000", paid: "5.000.000" });
+  assert.deepEqual(partial.success && partial.data, {
+    totalMinor: 3_000_000_000,
+    paidMinor: 500_000_000,
+    // Omitted dueOn is not sent to the UPDATE — a settlement never wipes a due date.
+    dueOn: undefined,
+    status: "partial",
+  });
+
+  const paidOff = updateCommitmentSchema.safeParse({ total: "30.000.000", paid: "30.000.000" });
+  assert.equal(paidOff.success && paidOff.data.status, "paid");
+
+  const unpaid = updateCommitmentSchema.safeParse({ total: "30.000.000", paid: "" });
+  assert.equal(unpaid.success && unpaid.data.status, "unpaid");
+});
+
+test("dueOn: an explicit date is set, an empty string clears it", () => {
+  const dated = updateCommitmentSchema.safeParse({
+    total: "30.000.000",
+    paid: "0",
+    dueOn: "2027-01-15",
+  });
+  assert.equal(dated.success && dated.data.dueOn, "2027-01-15");
+
+  const cleared = updateCommitmentSchema.safeParse({ total: "30.000.000", paid: "0", dueOn: "" });
+  assert.equal(cleared.success && cleared.data.dueOn, null);
+});
+
+test("a settlement may exceed the contract total — overage is stored, not clamped", () => {
+  const parsed = updateCommitmentSchema.safeParse({ total: "30.000.000", paid: "31.000.000" });
+  assert.equal(parsed.success, true);
+  assert.equal(parsed.success && parsed.data.paidMinor, 3_100_000_000);
+  assert.equal(parsed.success && parsed.data.status, "paid");
 });

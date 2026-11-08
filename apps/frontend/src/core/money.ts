@@ -33,6 +33,30 @@ export function formatDate(iso: string): string {
   return dateFormat.format(new Date(`${iso}T00:00:00Z`));
 }
 
+const instantFormat = new Intl.DateTimeFormat("id-ID", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  // Instants (a token's expiry) read in the user's Jakarta day, not the UTC one.
+  timeZone: "Asia/Jakarta",
+});
+
+/** A `Date` instant (e.g. a share link's expiry) to the id-ID day the user reads. */
+export function formatInstantDate(date: Date): string {
+  return instantFormat.format(date);
+}
+
+/**
+ * The report's "Sisa" cell: `null` = no budget set ("—", never a fake zero); an
+ * over-budget remainder is never clamped and reads "+Rp 500.000" in danger colour.
+ */
+export function formatRemaining(remainingMinor: number | null, overBudget: boolean): string {
+  if (remainingMinor === null) return "—";
+  return overBudget
+    ? `+${formatRupiah(Math.abs(remainingMinor))}`
+    : formatRupiah(remainingMinor);
+}
+
 /** Whole rupiah to minor units, for form input that collects thousands. */
 export function rupiahToMinor(rupiah: number): number {
   const whole = Math.round(rupiah);
@@ -58,4 +82,41 @@ export function parseRupiahInput(input: string): number | null {
 
   const rupiah = Number(digits);
   return Number.isSafeInteger(rupiah) && rupiah <= MAX_RUPIAH ? rupiah : null;
+}
+
+/**
+ * A *statement's* printed rupiah (`Rp 1.234.567`, `1.234.567`, `1.234.567,89`,
+ * `-Rp 750.000`, `(Rp 750.000)`) to integer minor units, or `null` when it is not a
+ * number this app is willing to store.
+ *
+ * Stricter than `parseRupiahInput` on purpose: sen are exact (two decimals, which is
+ * what the Rp 0.05 totals tolerance is about), grouping must be well formed, and an
+ * ambiguous amount (`1,234`) is refused rather than guessed — a wrong number is worse
+ * than a parse failure the user can see (US-44).
+ *
+ * shortcut: id-ID conventions only (`.` groups, `,` decimals). A bank exporting
+ * en-US decimals needs a mapping option; add it when such a file actually appears.
+ */
+export function parseRupiahMinor(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  const parenthesised = /^\(.*\)$/.test(trimmed);
+  const body = trimmed
+    .replace(/^\(|\)$/g, "")
+    .replace(/rp\.?/gi, "")
+    .replace(/\s/g, "");
+  const negative = parenthesised || body.startsWith("-");
+  const digits = body.startsWith("-") ? body.slice(1) : body;
+
+  // Whole rupiah with optional well-formed `.` grouping, optional `,dd` decimals.
+  const match = /^(?:(\d{1,3}(?:\.\d{3})*)|(\d+))(?:,(\d{1,2}))?$/.exec(digits);
+  if (!match) return null;
+
+  const rupiah = Number((match[1] ?? match[2]).replace(/\./g, ""));
+  const sen = match[3] ? Number(match[3].padEnd(2, "0")) : 0;
+  const minor = rupiah * MINOR_PER_RUPIAH + sen;
+  if (!Number.isSafeInteger(minor) || rupiah > MAX_RUPIAH) return null;
+
+  return negative ? -minor : minor;
 }

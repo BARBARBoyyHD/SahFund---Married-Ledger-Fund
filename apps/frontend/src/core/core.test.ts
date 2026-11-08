@@ -1,7 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { forecast, monthsUntil } from "./forecast.ts";
-import { formatDate, formatRupiah, parseRupiahInput, rupiahToMinor } from "./money.ts";
+import {
+  formatDate,
+  formatInstantDate,
+  formatRemaining,
+  formatRupiah,
+  parseRupiahInput,
+  parseRupiahMinor,
+  rupiahToMinor,
+} from "./money.ts";
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
@@ -14,6 +22,18 @@ test("formatRupiah groups in id-ID and keeps the sign", () => {
 test("formatDate renders a calendar date in id-ID without shifting the day", () => {
   assert.equal(formatDate("2027-06-03"), "3 Juni 2027");
   assert.equal(formatDate("2026-11-05"), "5 November 2026");
+});
+
+test("formatInstantDate renders an expiry instant as the Jakarta calendar day", () => {
+  // 18:00 UTC is already the next day in Jakarta (UTC+7) - the owner's date, not UTC's.
+  assert.equal(formatInstantDate(new Date("2026-12-08T18:00:00Z")), "9 Desember 2026");
+  assert.equal(formatInstantDate(new Date("2026-12-08T04:00:00Z")), "8 Desember 2026");
+});
+
+test("formatRemaining shows a blank for no budget and an unclamped over-budget sign", () => {
+  assert.equal(formatRemaining(null, false), "—");
+  assert.equal(formatRemaining(5000000, false), "Rp 50.000");
+  assert.equal(formatRemaining(-5000000, true), "+Rp 50.000");
 });
 
 test("rupiahToMinor never produces a fraction", () => {
@@ -35,6 +55,27 @@ test("parseRupiahInput accepts how people type rupiah and refuses fractions", ()
   assert.equal(parseRupiahInput("1.234,56"), null);
   // Beyond 2^53 the digits stop being exact, so refuse instead of storing a wrong number.
   assert.equal(parseRupiahInput("99999999999999999999"), null);
+});
+
+test("parseRupiahMinor reads a printed statement amount as exact minor units", () => {
+  assert.equal(parseRupiahMinor("Rp 1.234.567"), 123_456_700);
+  assert.equal(parseRupiahMinor("1.234.567"), 123_456_700);
+  assert.equal(parseRupiahMinor("250000"), 25_000_000);
+  assert.equal(parseRupiahMinor("-Rp 750.000"), -75_000_000);
+  assert.equal(parseRupiahMinor("(Rp 750.000)"), -75_000_000);
+  // Sen are exact — the Rp 0.05 totals tolerance exists because banks print them.
+  assert.equal(parseRupiahMinor("Rp 1.234,5"), 123_450);
+  assert.equal(parseRupiahMinor("Rp 1.234,56"), 123_456);
+  assert.equal(parseRupiahMinor("Rp 1.234,56 "), 123_456);
+
+  // Ambiguous or malformed amounts are refused, never guessed (US-44).
+  assert.equal(parseRupiahMinor(""), null);
+  assert.equal(parseRupiahMinor("Rp"), null);
+  assert.equal(parseRupiahMinor("1,234"), null);
+  assert.equal(parseRupiahMinor("1.234,567"), null);
+  assert.equal(parseRupiahMinor("12.34"), null);
+  assert.equal(parseRupiahMinor("abc"), null);
+  assert.equal(parseRupiahMinor("99999999999999999999"), null);
 });
 
 test("money past 2^53 minor units is refused, not silently rounded (SPEC E4)", () => {

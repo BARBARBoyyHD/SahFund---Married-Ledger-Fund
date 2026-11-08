@@ -107,11 +107,22 @@ export async function createWorkspace(page: Page, name: string) {
 }
 
 /**
+ * The dashboard header collapses its five actions into one ellipsis button, so every
+ * menu-driven flow starts by opening it.
+ */
+export async function openDashboardMenu(page: Page) {
+  const trigger = page.getByRole("button", { name: /^menu aksi$/i });
+  await waitForHydrated(trigger);
+  await trigger.click();
+}
+
+/**
  * US-07/US-52: the dashboard keeps the invite panel in a native `<dialog>` — the code,
  * the join link, the email form and the rotate button are all inside it.
  */
 export async function openInvite(page: Page) {
-  const trigger = page.getByRole("button", { name: /^undang pasangan$/i });
+  await openDashboardMenu(page);
+  const trigger = page.getByRole("menuitem", { name: /^undang pasangan$/i });
   await waitForHydrated(trigger);
   await trigger.click();
 

@@ -176,7 +176,7 @@ export function ImportPreview({
       ) : null}
 
       <div className="mt-4 overflow-x-auto rounded-sm border border-gold/35">
-        <table className="w-full text-left text-small">
+        <table className="w-full min-w-[36rem] text-left text-small">
           <caption className="sr-only">
             Pratinjau {Math.min(pocket.transactions.length, PREVIEW_ROWS)} baris pertama dari{" "}
             {pocket.transactions.length} transaksi yang akan diimpor.

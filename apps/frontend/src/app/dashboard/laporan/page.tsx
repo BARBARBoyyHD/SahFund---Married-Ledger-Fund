@@ -219,7 +219,7 @@ async function LaporanContent() {
             </div>
           ) : (
             <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
-              <table className="w-full text-left text-small">
+              <table className="w-full min-w-[32rem] text-left text-small">
                 <caption className="sr-only">
                   Uang masuk, uang keluar, dan posisi bersih per anggota, dengan baris
                   transaksi tanpa anggota di bagian akhir
@@ -329,7 +329,7 @@ async function LaporanContent() {
             </div>
           ) : (
             <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
-              <table className="w-full text-left text-small">
+              <table className="w-full min-w-[32rem] text-left text-small">
                 <caption className="sr-only">
                   Anggaran, komitmen, terbayar, dan sisa per kategori, dengan baris total
                   seluruh perhelatan dan tombol ubah anggaran di tiap baris kategori

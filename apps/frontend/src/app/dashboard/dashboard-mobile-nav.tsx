@@ -10,6 +10,10 @@ import { Icon } from "./dashboard-icons";
  * The phone chrome: one 56px bar with the menu button, and the nav itself in a native
  * `<dialog>` sheet. `showModal` gives the focus trap, Escape close, backdrop and focus
  * return to the button — the same contract every other dialog in the app uses.
+ *
+ * Every nav link closes the sheet before it navigates. Next 16 keeps the previous route's
+ * tree mounted after a client navigation, so a modal left open would stay in the top
+ * layer and make the next page inert (scroll and taps dead until the user goes back).
  */
 export function DashboardMobileNav({ children }: { children: ReactNode }) {
   const drawer = useRef<HTMLDialogElement>(null);
@@ -69,7 +73,14 @@ export function DashboardMobileNav({ children }: { children: ReactNode }) {
             <Icon name="close" className="h-5 w-5" />
           </button>
         </div>
-        <div className="flex flex-col gap-5 px-3 pb-6">{children}</div>
+        <div
+          className="flex flex-col gap-5 px-3 pb-6"
+          onClickCapture={(event) => {
+            if (event.target instanceof Element && event.target.closest("a")) hide();
+          }}
+        >
+          {children}
+        </div>
       </dialog>
     </>
   );

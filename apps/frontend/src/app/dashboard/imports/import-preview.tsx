@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Field, FormMessage, describedBy, inputClass } from "@/components/app/form";
+import { TableScroll } from "@/components/app/table-scroll";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY } from "@/components/landing/ui";
 import { formatDate, formatRupiah } from "@/core/money";
 import { reconcile, type Reconciliation } from "@/core/reconcile";
@@ -175,7 +176,7 @@ export function ImportPreview({
         </p>
       ) : null}
 
-      <div className="mt-4 overflow-x-auto rounded-sm border border-gold/35">
+      <TableScroll label="Tabel pratinjau transaksi impor" className="mt-4">
         <table className="w-full text-left text-small">
           <caption className="sr-only">
             Pratinjau {Math.min(pocket.transactions.length, PREVIEW_ROWS)} baris pertama dari{" "}
@@ -211,7 +212,7 @@ export function ImportPreview({
             ))}
           </tbody>
         </table>
-      </div>
+      </TableScroll>
       {pocket.transactions.length > PREVIEW_ROWS ? (
         <p className="mt-2 text-small text-ink-muted">
           …dan {pocket.transactions.length - PREVIEW_ROWS} baris lainnya.

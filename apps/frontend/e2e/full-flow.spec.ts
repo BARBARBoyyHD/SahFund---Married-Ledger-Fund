@@ -4,6 +4,7 @@ import {
   createWorkspace,
   formAlert,
   newActor,
+  openDashboardMenu,
   openInvite,
   signUp,
   uniqueEmail,
@@ -119,7 +120,8 @@ test("PEP M1: two accounts share one workspace, an import reaches the report, an
 
   // --- US-08: date and budget from the settings dialog; the prompt goes, the date renders
   // in id-ID through `src/core/money.ts` (never a raw ISO string or en-US grouping).
-  const settings = owner.page.getByRole("button", { name: /^pengaturan$/i });
+  const settings = owner.page.getByRole("menuitem", { name: /^pengaturan$/i });
+  await openDashboardMenu(owner.page);
   await waitForHydrated(settings);
   await settings.click();
   const settingsDialog = owner.page.getByRole("dialog", { name: /pengaturan/i });
@@ -135,6 +137,7 @@ test("PEP M1: two accounts share one workspace, an import reaches the report, an
   // Reloaded, so the values are read back from D1 and formatted by `money.ts` on the
   // server — the form's own state cannot make this assertion pass.
   await owner.page.reload();
+  await openDashboardMenu(owner.page);
   await settings.click();
   await expect(settingsDialog.locator("#tanggal-pernikahan")).toHaveValue("2027-06-03");
   await expect(settingsDialog.locator("#target-anggaran")).toHaveValue("Rp 150.000.000");
@@ -142,7 +145,8 @@ test("PEP M1: two accounts share one workspace, an import reaches the report, an
 
   // --- US-03: sign-out clears the cookie and lands on /login; the dashboard then
   // redirects server-side (307) instead of rendering anything.
-  const signOut = owner.page.getByRole("button", { name: /^keluar$/i });
+  const signOut = owner.page.getByRole("menuitem", { name: /^keluar$/i });
+  await openDashboardMenu(owner.page);
   await waitForHydrated(signOut);
   await signOut.click();
   await owner.page.waitForURL(/\/login$/, { timeout: 20_000 });

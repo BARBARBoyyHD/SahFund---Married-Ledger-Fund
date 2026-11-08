@@ -4,13 +4,14 @@ import type { ReactNode } from "react";
 import { daysUntil, jakartaDay } from "@/core/dashboard";
 import { Mark } from "@/components/mark";
 import { Icon } from "./dashboard-icons";
+import { DashboardMobileNav } from "./dashboard-mobile-nav";
 import { DashboardSidebarToggle } from "./dashboard-sidebar-toggle";
 
 /**
  * The dashboard chrome shared by `/dashboard` and its subpages. One nav list, so the
- * sidebar and the phone bar can never disagree: Overview, Transaksi, Laporan, Komitmen
- * and Forecast are real pages with `aria-current`; Anggaran stays a section anchor on
- * the dashboard until its own page exists.
+ * desktop sidebar and the phone drawer can never disagree: Overview, Transaksi, Laporan,
+ * Komitmen and Forecast are real pages with `aria-current`; Anggaran stays a section
+ * anchor on the dashboard until its own page exists.
  */
 export type DashboardSection =
   | "overview"
@@ -18,7 +19,7 @@ export type DashboardSection =
   | "laporan"
   | "komitmen"
   | "forecast"
-  // No nav slot on purpose: a seventh item crowds the phone bar. Its entry point is the
+  // No nav slot on purpose: a seventh item crowds the drawer. Its entry point is the
   // "Impor mutasi" action in the dashboard header.
   | "imports";
 
@@ -31,6 +32,13 @@ const NAV = [
   { key: "forecast", href: "/dashboard/forecast", label: "Forecast", icon: "trend" },
 ] as const;
 
+export type DashboardNavProps = {
+  workspaceName: string;
+  weddingDate: string | null;
+  members: { userId: string; name: string }[];
+  active: DashboardSection;
+};
+
 function initials(name: string) {
   return name
     .trim()
@@ -40,24 +48,20 @@ function initials(name: string) {
     .join("");
 }
 
-export function DashboardSidebar({
+/**
+ * Brand, workspace card and the one nav list. Shared by the desktop rail and the phone
+ * drawer; the collapse toggle hides itself below `lg`, where the drawer owns the menu.
+ */
+export function DashboardSidebarContent({
   workspaceName,
   weddingDate,
   members,
   active,
-}: {
-  workspaceName: string;
-  weddingDate: string | null;
-  members: { userId: string; name: string }[];
-  active: DashboardSection;
-}) {
+}: DashboardNavProps) {
   const days = weddingDate ? daysUntil(weddingDate, jakartaDay(new Date())) : null;
 
   return (
-    <aside
-      id="dashboard-sidebar"
-      className="dashboard-sidebar hidden w-60 shrink-0 flex-col gap-6 border-r border-gold/35 bg-pearl px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh"
-    >
+    <>
       <div className="flex flex-col gap-1">
         <Link
           href="/dashboard"
@@ -70,7 +74,9 @@ export function DashboardSidebar({
           </span>
         </Link>
 
-        <DashboardSidebarToggle />
+        <div className="hidden lg:block">
+          <DashboardSidebarToggle />
+        </div>
       </div>
 
       <div className="sidebar-full-only card-sheen rounded-sm border border-gold/35 p-3">
@@ -121,44 +127,25 @@ export function DashboardSidebar({
           })}
         </ul>
       </nav>
+    </>
+  );
+}
+
+export function DashboardSidebar(props: DashboardNavProps) {
+  return (
+    <aside
+      id="dashboard-sidebar"
+      className="dashboard-sidebar hidden w-60 shrink-0 flex-col gap-6 border-r border-gold/35 bg-pearl px-3 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh"
+    >
+      <DashboardSidebarContent {...props} />
     </aside>
   );
 }
 
-/** The phone bar: same five destinations, emerald active state, gold top seam. */
-export function DashboardMobileNav({ active }: { active: DashboardSection }) {
-  return (
-    <nav
-      aria-label="Navigasi seluler"
-      className="shrink-0 border-t border-gold/35 bg-pearl pb-[env(safe-area-inset-bottom)] shadow-nav lg:hidden"
-    >
-      <ul className="flex px-3">
-        {NAV.map((item) => {
-          const current = item.key === active;
-          return (
-            <li key={item.key} className="flex-1">
-              <Link
-                href={item.href}
-                aria-current={current ? "page" : undefined}
-                className={`flex h-14 flex-col items-center justify-center gap-0.5 ${
-                  current ? "text-emerald" : "text-ink-muted"
-                }`}
-              >
-                <Icon name={item.icon} className="h-5 w-5" />
-                <span className={`text-xs ${current ? "font-semibold" : ""}`}>{item.label}</span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
-}
-
 /**
- * The page frame for dashboard subpages: pearl ground, sidebar on desktop, phone bar
- * below the scroll area on mobile. The main dashboard keeps its own wrappers because
- * its header row is taller; the sidebar and nav themselves are this same component.
+ * The page frame for every dashboard screen: pearl ground, a stuck sidebar on desktop,
+ * and — below `lg` — a slim top bar whose button slides the same nav in as a drawer.
+ * The drawer sits in the top layer, so no page content ever hides behind a fixed bar.
  */
 export function DashboardShell({
   workspaceName,
@@ -166,13 +153,9 @@ export function DashboardShell({
   members,
   active,
   children,
-}: {
-  workspaceName: string;
-  weddingDate: string | null;
-  members: { userId: string; name: string }[];
-  active: DashboardSection;
-  children: ReactNode;
-}) {
+}: DashboardNavProps & { children: ReactNode }) {
+  const nav = { workspaceName, weddingDate, members, active };
+
   return (
     <div className="dashboard-shell flex flex-col bg-pearl text-ink [--focus-ring:var(--color-emerald)] lg:h-auto lg:min-h-svh lg:flex-row">
       <a
@@ -182,16 +165,15 @@ export function DashboardShell({
         Lewati ke konten
       </a>
 
-      <DashboardSidebar
-        workspaceName={workspaceName}
-        weddingDate={weddingDate}
-        members={members}
-        active={active}
-      />
+      <DashboardSidebar {...nav} />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:overflow-visible">{children}</div>
-        <DashboardMobileNav active={active} />
+        <DashboardMobileNav>
+          <DashboardSidebarContent {...nav} />
+        </DashboardMobileNav>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom)] lg:overflow-visible lg:pb-0">
+          {children}
+        </div>
       </div>
     </div>
   );

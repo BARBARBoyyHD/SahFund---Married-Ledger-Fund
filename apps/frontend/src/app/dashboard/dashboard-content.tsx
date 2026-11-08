@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { AppHeader } from "@/components/app/app-header";
 import { SignOutButton } from "@/components/app/sign-out-button";
+import { TableScroll } from "@/components/app/table-scroll";
 import { LINK } from "@/components/app/ui";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, Container, Eyebrow } from "@/components/landing/ui";
 import {
@@ -30,7 +31,8 @@ import { trustedTotalsCondition } from "@/lib/ledger/trusted";
 import { requireSession } from "@/lib/session";
 import { readWorkspace } from "@/lib/workspace/workspace-access";
 import { DashboardActions } from "./dashboard-dialogs";
-import { DashboardMobileNav, DashboardSidebar } from "./dashboard-nav";
+import { DashboardMobileNav } from "./dashboard-mobile-nav";
+import { DashboardSidebar, DashboardSidebarContent } from "./dashboard-nav";
 
 /**
  * The dashboard (design D11 revised): one page per user, read-only for now. Every
@@ -258,7 +260,15 @@ export async function DashboardContent() {
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden lg:overflow-visible">
+        <DashboardMobileNav>
+          <DashboardSidebarContent
+            workspaceName={account.name}
+            weddingDate={account.weddingDate}
+            members={memberRows.map((member) => ({ userId: member.userId, name: member.name }))}
+            active="overview"
+          />
+        </DashboardMobileNav>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden pb-[env(safe-area-inset-bottom)] lg:overflow-visible lg:pb-0">
           {/* Page title row: on the pearl ground, no bar or frosted header. */}
           <header id="overview" className="mx-auto w-full max-w-[1200px] scroll-mt-6 px-4 pt-6 sm:px-6 lg:px-8 lg:pt-8">
             <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
@@ -290,7 +300,6 @@ export async function DashboardContent() {
                     name: member.name,
                   }))}
                 />
-                <SignOutButton />
               </div>
             </div>
           </header>
@@ -613,7 +622,7 @@ export async function DashboardContent() {
 
             {/* Workbench — graded panels holding white data cards. */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-              <div className="flex flex-col gap-4 lg:col-span-7">
+              <div className="flex min-w-0 flex-col gap-4 lg:col-span-7">
                 <section
                   aria-labelledby="anggaran-judul"
                   id="anggaran"
@@ -629,7 +638,10 @@ export async function DashboardContent() {
                   {budgetRows.length === 0 ? (
                     <EmptyState>Belum ada kategori di workspace ini.</EmptyState>
                   ) : (
-                    <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
+                    <TableScroll
+                      label="Tabel anggaran dan realisasi per pos"
+                      className="card-sheen mt-4 p-4"
+                    >
                       <table className="w-full text-left text-small">
                         <caption className="sr-only">
                           Anggaran, realisasi, dan sisa alokasi per pos perhelatan
@@ -692,7 +704,7 @@ export async function DashboardContent() {
                           })}
                         </tbody>
                       </table>
-                    </div>
+                    </TableScroll>
                   )}
                 </section>
 
@@ -767,7 +779,7 @@ export async function DashboardContent() {
                 </section>
               </div>
 
-              <div className="flex flex-col gap-4 lg:col-span-5">
+              <div className="flex min-w-0 flex-col gap-4 lg:col-span-5">
                 <section
                   aria-labelledby="transaksi-judul"
                   id="transaksi"
@@ -844,9 +856,6 @@ export async function DashboardContent() {
             </div>
           </main>
         </div>
-
-        {/* Phone shell: the canvas scrolls above this bar, never underneath it. */}
-        <DashboardMobileNav active="overview" />
       </div>
     </div>
   );

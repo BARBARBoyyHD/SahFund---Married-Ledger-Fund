@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { PageSkeleton } from "@/components/app/skeleton";
+import { TableScroll } from "@/components/app/table-scroll";
 import { toMinor } from "@/core/dashboard";
 import { formatDate, formatInstantDate, formatRemaining, formatRupiah } from "@/core/money";
 import { getDb } from "@/lib/db";
@@ -218,7 +219,10 @@ async function LaporanContent() {
               </p>
             </div>
           ) : (
-            <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
+            <TableScroll
+              label="Tabel kontribusi per anggota"
+              className="card-sheen mt-4 p-4"
+            >
               <table className="w-full text-left text-small">
                 <caption className="sr-only">
                   Uang masuk, uang keluar, dan posisi bersih per anggota, dengan baris
@@ -303,7 +307,7 @@ async function LaporanContent() {
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TableScroll>
           )}
         </section>
 
@@ -328,7 +332,10 @@ async function LaporanContent() {
               </p>
             </div>
           ) : (
-            <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
+            <TableScroll
+              label="Tabel anggaran, komitmen, dan terbayar per kategori"
+              className="card-sheen mt-4 p-4"
+            >
               <table className="w-full text-left text-small">
                 <caption className="sr-only">
                   Anggaran, komitmen, terbayar, dan sisa per kategori, dengan baris total
@@ -432,7 +439,7 @@ async function LaporanContent() {
                   </tr>
                 </tfoot>
               </table>
-            </div>
+            </TableScroll>
           )}
 
           <p className="mt-3 text-small text-ink-muted">

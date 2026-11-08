@@ -209,9 +209,78 @@
     background-color: rgb(4 20 15 / 0.55);
   }
 
+  /* Phone nav drawer: a left sheet in the top layer, same backdrop as a modal. */
+  .nav-drawer {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    margin: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    width: min(18rem, 86vw);
+    max-width: 86vw;
+    overflow-y: auto;
+    border: 0;
+    border-inline-end: 1px solid color-mix(in srgb, var(--color-gold) 35%, transparent);
+    background-color: var(--color-pearl);
+    color: var(--color-ink);
+    padding: 0;
+  }
+
+  .nav-drawer::backdrop {
+    background-color: rgb(4 20 15 / 0.55);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .nav-drawer[open] {
+      animation: nav-drawer-in 180ms var(--ease-out);
+    }
+
+    .nav-drawer[open]::backdrop {
+      animation: nav-drawer-fade 180ms var(--ease-out);
+    }
+  }
+
+  @keyframes nav-drawer-in {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes nav-drawer-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* The one horizontal-scroll container for data tables (TableScroll). The component
+     adds role="region" + tabindex so keyboard users can pan it with the arrow keys. */
+  .table-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-emerald-shade) transparent;
+  }
+
+  /* Below lg the width floor makes a table overflow instead of squeezing its columns;
+     at lg+ the table keeps its old fluid width (no scrollbar appears on desktop). */
+  @media (max-width: 1023.98px) {
+    .table-scroll > table {
+      min-width: 36rem;
+    }
+  }
+
   /* Phone shell (docs/ui/html/design.html): below lg the dashboard owns the viewport,
-     the inner pane is the only scroller and the document cannot scroll. `100vh` first
-     is the fallback for browsers without `dvh`; both keep the bar at the viewport edge. */
+     the inner pane is the only scroller and the document cannot scroll, so the menu bar
+     and the page frame stay put. `100vh` first is the fallback for browsers without
+     `dvh`; both keep the shell at the viewport edge. */
   @media (max-width: 1023.98px) {
     html:has(.dashboard-shell),
     body:has(.dashboard-shell) {

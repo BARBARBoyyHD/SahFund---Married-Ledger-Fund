@@ -31,11 +31,15 @@ export default async function config(phase: string): Promise<NextConfig> {
   // Gives `next dev` the Worker bindings (D1 "DB" among them) via wrangler's platform proxy.
   // `DB` carries `"remote": true` in wrangler.jsonc, so `next dev` writes to the real D1.
   // Playwright sets E2E_LOCAL_DB=1 so an e2e run stays on the isolated local Miniflare DB.
-  const init = initOpenNextCloudflareForDev({ remoteBindings: process.env.E2E_LOCAL_DB !== "1" });
-  // The init opens a remote connection (seconds). Unawaited, `next dev` serves requests before
-  // the context exists and every one throws "getCloudflareContext has been called without
-  // initOpenNextCloudflareForDev" (auth.ts:24). Awaiting in dev only: documented fire-and-forget
-  // behaviour, and no build should block on (or require) a wrangler binding.
-  if (phase === PHASE_DEVELOPMENT_SERVER) await init;
+  //
+  // Dev only. The init starts Miniflare/workerd, and `next build` evaluates this config in every
+  // build worker process, so an unconditional call spawns several workerd instances that race on
+  // `.wrangler/state/**/*.sqlite` ("database is locked: SQLITE_BUSY" on Workers Builds) and ask for
+  // a remote D1 token in CI. The build reads no binding, so the whole call is gated, not just the await.
+  if (phase === PHASE_DEVELOPMENT_SERVER) {
+    // Awaiting matters: unawaited, `next dev` serves requests before the context exists and every one
+    // throws "getCloudflareContext has been called without initOpenNextCloudflareForDev" (auth.ts:24).
+    await initOpenNextCloudflareForDev({ remoteBindings: process.env.E2E_LOCAL_DB !== "1" });
+  }
   return nextConfig;
 }

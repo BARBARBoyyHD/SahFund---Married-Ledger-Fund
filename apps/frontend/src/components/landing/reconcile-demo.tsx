@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useId, useState } from "react";
 
-import { formatRupiah, MINOR_PER_RUPIAH } from "@/core/money";
+import { formatRupiah, rupiahToMinor } from "@/core/money";
 import { MemberChip } from "@/components/landing/member-chip";
 import type { DemoRow } from "@/lib/landing-demo";
 
@@ -31,7 +31,7 @@ export function ReconcileDemo({
   const inputId = useId();
   const statusId = useId();
   const [digits, setDigits] = useState("");
-  const typedMinor = digits ? Number(digits) * MINOR_PER_RUPIAH : null;
+  const typedMinor = digits ? rupiahToMinor(Number(digits)) : null;
   const matched = typedMinor === closingMinor;
   const difference = typedMinor === null ? 0 : typedMinor - closingMinor;
 
@@ -109,13 +109,13 @@ export function ReconcileDemo({
         </label>
         <input
           id={inputId}
-          value={digits ? formatRupiah(Number(digits) * MINOR_PER_RUPIAH) : ""}
+          value={digits ? formatRupiah(rupiahToMinor(Number(digits))) : ""}
           onChange={(event) =>
             setDigits(event.target.value.replace(/\D/g, "").slice(0, 13))
           }
           inputMode="numeric"
           autoComplete="off"
-          placeholder="Rp 0"
+          placeholder={formatRupiah(0)}
           aria-describedby={statusId}
           aria-invalid={typedMinor !== null && !matched}
           className="mt-2 h-11 w-full rounded-sm border border-gold-line bg-surface px-3 text-body font-semibold tabular-nums outline-none transition-colors focus:border-emerald focus:ring-2 focus:ring-emerald/25"

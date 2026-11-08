@@ -8,7 +8,7 @@ import {
 const FOOTER_LINKS = [
   { href: "#cara-kerja", label: "Cara kerja" },
   { href: "#yang-dicatat", label: "Yang dicatat" },
-  { href: "#harga", label: "Harga" },
+  // TODO(payment): re-add { href: "#harga", label: "Harga" } when PAYMENT_ENABLED — see docs/projects/NOTE-payment-disabled.md
   { href: "#pertanyaan", label: "Pertanyaan" },
 ];
 
@@ -26,9 +26,11 @@ export function Close() {
         </Container>
 
         <Container className="mt-16 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          {/* TODO(payment): restore pricing copy when PAYMENT_ENABLED — see docs/projects/NOTE-payment-disabled.md */}
           <p data-reveal className="max-w-[40ch] text-body text-pearl-muted">
-            Satu impor gratis: buat akun, cocokkan satu bulan mutasi, lalu lihat
-            proyeksinya. Bayar hanya kalau catatannya mau dilanjutkan.
+            Buat akun, impor mutasi, cocokkan dengan saldo yang dicetak bank,
+            lalu lihat proyeksinya. Semua fitur terbuka tanpa biaya; pembelian
+            belum tersedia untuk sementara.
           </p>
           <Link href="/login" className={`${BUTTON_ON_EMERALD} shrink-0`}>
             Buat akun

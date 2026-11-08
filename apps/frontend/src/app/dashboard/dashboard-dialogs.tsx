@@ -1,9 +1,18 @@
 "use client";
 
-import { useRef } from "react";
+import Link from "next/link";
+import { useRef, useState } from "react";
 
 import { DIALOG_CLASS, DialogHeading } from "@/components/app/dialog";
-import { BUTTON_SMALL } from "@/components/app/ui";
+import { useSignOut } from "@/components/app/use-sign-out";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DeleteAccountPanel } from "./delete-account-panel";
 import { DetailsForm } from "./details-form";
 import { Icon } from "./dashboard-icons";
 import { InvitePanel } from "./invite-panel";
@@ -14,6 +23,9 @@ import { ManualTransactionForm } from "./manual-transaction-form";
  * `router.refresh()`; this file only supplies the triggers and the native `<dialog>`
  * chrome — built-in focus trap, Escape close, backdrop, and focus restored to the
  * trigger on close. No hand-rolled focus management.
+ *
+ * The five header actions live behind one ellipsis button so the phone header stays a
+ * single 40px control instead of a wrapping button wall.
  */
 export function DashboardActions({
   workspaceId,
@@ -39,6 +51,10 @@ export function DashboardActions({
   const manualDialog = useRef<HTMLDialogElement>(null);
   const inviteDialog = useRef<HTMLDialogElement>(null);
   const settingsDialog = useRef<HTMLDialogElement>(null);
+  // Remounts the delete panel on each open, so a half-confirmed destructive form never
+  // survives a close (the acknowledgements are a deliberate second action).
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { signOut, pending, message } = useSignOut();
 
   function closeOnBackdrop(event: React.MouseEvent<HTMLDialogElement>) {
     if (event.target === event.currentTarget) event.currentTarget.close();
@@ -46,31 +62,42 @@ export function DashboardActions({
 
   return (
     <>
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        className={`${BUTTON_SMALL} gap-1.5`}
-        onClick={() => manualDialog.current?.showModal()}
-      >
-        <Icon name="plus" className="h-4 w-4" />
-        Tambah manual
-      </button>
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        className={BUTTON_SMALL}
-        onClick={() => inviteDialog.current?.showModal()}
-      >
-        Undang pasangan
-      </button>
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        className={BUTTON_SMALL}
-        onClick={() => settingsDialog.current?.showModal()}
-      >
-        Pengaturan
-      </button>
+      <div className="flex flex-col items-end gap-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger aria-label="Menu aksi">
+            <Icon name="more" className="h-5 w-5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => manualDialog.current?.showModal()}>
+              Tambah manual
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link href="/dashboard/imports" />}>
+              Impor mutasi
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => inviteDialog.current?.showModal()}>
+              Undang pasangan
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setSettingsOpen(true);
+                settingsDialog.current?.showModal();
+              }}
+            >
+              Pengaturan
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={signOut} disabled={pending}>
+              {pending ? "Keluar…" : "Keluar"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {message ? (
+          <p role="alert" className="text-small font-semibold text-danger">
+            {message}
+          </p>
+        ) : null}
+      </div>
 
       <dialog
         ref={manualDialog}
@@ -126,11 +153,12 @@ export function DashboardActions({
         aria-labelledby="pengaturan-judul"
         className={DIALOG_CLASS}
         onClick={closeOnBackdrop}
+        onClose={() => setSettingsOpen(false)}
       >
         <DialogHeading
           id="pengaturan-judul"
           title="Pengaturan"
-          description="Tanggal pernikahan dan target anggaran bisa diubah kapan saja."
+          description="Tanggal pernikahan, target anggaran, dan penghapusan akun."
           onClose={() => settingsDialog.current?.close()}
         />
         <div className="mt-5">
@@ -139,6 +167,7 @@ export function DashboardActions({
             initialWeddingDate={initialWeddingDate}
             initialBudget={initialBudget}
           />
+          {settingsOpen ? <DeleteAccountPanel /> : null}
         </div>
       </dialog>
     </>

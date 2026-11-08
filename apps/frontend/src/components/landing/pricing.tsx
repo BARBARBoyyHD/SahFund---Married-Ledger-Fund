@@ -17,10 +17,12 @@ export function Pricing() {
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-x-12">
           <div data-reveal className="lg:col-span-4">
             <Eyebrow>Harga</Eyebrow>
-            <h2 className="mt-4 text-h2 font-bold text-ink">Satu kali bayar</h2>
+            <h2 className="mt-4 text-h2 font-bold text-ink">
+              Sekali bayar per pernikahan
+            </h2>
             <p className="mt-4 max-w-[34ch] text-body text-ink-muted">
-              Sekali per pernikahan, bukan langganan. Pekerjaannya memang selesai
-              di hari H.
+              Dibayar satu kali untuk satu pernikahan, tidak ada tagihan lagi
+              setelahnya. Pekerjaannya memang selesai di hari H.
             </p>
           </div>
 
@@ -32,8 +34,14 @@ export function Pricing() {
               {formatRupiah(rupiahToMinor(49_000))}
             </p>
             <p className="mt-3 text-body text-ink-muted">
-              Harga perkenalan. Setelahnya{" "}
-              {formatRupiah(rupiahToMinor(99_000))} — tetap sekali bayar.
+              Harga perkenalan, sekali bayar per pernikahan. Setelahnya{" "}
+              {formatRupiah(rupiahToMinor(99_000))} — tetap sekali bayar, tanpa
+              tagihan susulan.
+            </p>
+
+            <p className="mt-6 max-w-[46ch] border-t border-gold-line pt-4 text-body text-ink-muted">
+              Mutasi kalian dibaca di perangkat sendiri: berkasnya tidak pernah
+              diunggah, dan tidak ada dokumen atau gambarnya yang disimpan.
             </p>
 
             <ul className="mt-8 space-y-2 text-body">
@@ -46,7 +54,7 @@ export function Pricing() {
               Buat akun
             </Link>
             <p className="mt-4 text-small text-ink-muted">
-              Satu impor gratis sebelum membayar. Tidak ada tagihan berulang.
+              Satu impor gratis sebelum membayar.
             </p>
           </div>
         </div>

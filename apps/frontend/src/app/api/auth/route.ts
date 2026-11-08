@@ -11,7 +11,7 @@ import {
   type SignUpInput,
 } from "@/lib/auth/schema";
 import { getDb } from "@/lib/db";
-import { invalid } from "@/lib/http";
+import { invalid, rateLimited } from "@/lib/http";
 
 /** Better Auth speaks English error codes; the user reads Bahasa Indonesia (§8). */
 function authFailure(error: unknown) {
@@ -70,12 +70,7 @@ export async function POST(request: Request) {
     return authFailure(error);
   }
 
-  if (!allowed) {
-    return NextResponse.json(
-      { message: "Terlalu banyak percobaan. Tunggu satu menit lalu coba lagi." },
-      { status: 429, headers: { "retry-after": "60" } },
-    );
-  }
+  if (!allowed) return rateLimited("percobaan", AUTH_LIMIT.windowMs);
 
   const body: unknown = await request.json().catch(() => null);
 

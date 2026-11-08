@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createManualTransactionSchema } from "./schema.ts";
+import { createManualTransactionSchema, updateTransactionClassificationSchema } from "./schema.ts";
 
 /**
  * US-21: the form and the route handler run this one schema. The request carries rupiah
@@ -98,5 +98,48 @@ test("a description over 200 characters is rejected", () => {
   assert.equal(
     parsed.success === false && parsed.error.issues[0]?.message,
     "Deskripsi maksimal 200 karakter.",
+  );
+});
+
+/**
+ * US-20 re-categorise: an imported row's PATCH may only touch classification. The
+ * statement facts in a tampered payload are stripped, not written.
+ */
+test("an imported-row patch keeps classification and drops statement facts", () => {
+  const parsed = updateTransactionClassificationSchema.safeParse({
+    categoryId: "cat-1",
+    memberId: "user-1",
+    occurredOn: "2020-01-01",
+    description: "tampered",
+    amount: "1",
+    direction: "in",
+  });
+
+  assert.equal(parsed.success, true);
+  if (!parsed.success) return;
+  assert.equal(parsed.data.categoryId, "cat-1");
+  assert.equal(parsed.data.memberId, "user-1");
+  for (const key of ["occurredOn", "description", "amount", "direction"]) {
+    assert.equal(key in parsed.data, false, key);
+  }
+});
+
+test("an empty string clears a reference; an omitted field stays unchanged", () => {
+  const cleared = updateTransactionClassificationSchema.safeParse({ categoryId: "" });
+  assert.equal(cleared.success, true);
+  assert.equal(cleared.success && cleared.data.categoryId, null);
+
+  const untouched = updateTransactionClassificationSchema.safeParse({});
+  assert.equal(untouched.success, true);
+  assert.equal(untouched.success && untouched.data.categoryId, undefined);
+  assert.equal(untouched.success && untouched.data.memberId, undefined);
+});
+
+test("a non-string reference is rejected with Bahasa Indonesia copy", () => {
+  const parsed = updateTransactionClassificationSchema.safeParse({ categoryId: 42 });
+  assert.equal(parsed.success, false);
+  assert.equal(
+    parsed.success === false && parsed.error.issues[0]?.message,
+    "Pilihan tidak valid.",
   );
 });

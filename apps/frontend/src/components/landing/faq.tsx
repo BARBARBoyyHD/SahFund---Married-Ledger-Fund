@@ -1,6 +1,11 @@
 import type { CSSProperties } from "react";
 
+import { formatRupiah, rupiahToMinor } from "@/core/money";
 import { Container, Eyebrow, Section } from "@/components/landing/ui";
+
+// FR-12's two tiers, via the one money module, so pricing and FAQ cannot drift apart.
+const INTRO_PRICE = formatRupiah(rupiahToMinor(49_000));
+const LIST_PRICE = formatRupiah(rupiahToMinor(99_000));
 
 const QUESTIONS = [
   {
@@ -15,8 +20,9 @@ const QUESTIONS = [
   },
   {
     question: "Apakah ini langganan?",
+    // TODO(payment): drop the "pembelian belum tersedia" tail when PAYMENT_ENABLED — see docs/projects/NOTE-payment-disabled.md
     answer:
-      "Bukan. Sekali bayar per pernikahan: Rp 49.000 harga perkenalan, Rp 99.000 setelahnya. Tidak ada tagihan berulang dan tidak ada biaya per anggota.",
+      `Bukan. Rencananya sekali bayar per pernikahan: ${INTRO_PRICE} harga perkenalan, ${LIST_PRICE} setelahnya, tanpa tagihan berulang dan tanpa biaya per anggota. Untuk sementara pembelian belum tersedia, jadi semua fitur terbuka tanpa biaya.`,
   },
   {
     question: "Bagaimana kalau saldonya tidak cocok?",

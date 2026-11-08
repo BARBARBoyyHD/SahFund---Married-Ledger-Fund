@@ -7,6 +7,7 @@ import {
   createWorkspace,
   formAlert,
   newActor,
+  openInvite,
   signUp,
   uniqueEmail,
   waitForHydrated,
@@ -33,6 +34,7 @@ test.describe("US-52: sending the pocket invite", () => {
     const owner = await newActor(browser, "owner");
     await signUp(owner.page, "Ayu Undangan", uniqueEmail("owner-invite"));
     const { code } = await createWorkspace(owner.page, "Nikah Undangan");
+    const dialog = await openInvite(owner.page);
 
     const sent: number[] = [];
     owner.page.on("response", (response) => {
@@ -41,12 +43,12 @@ test.describe("US-52: sending the pocket invite", () => {
       }
     });
 
-    await waitForInteractive(owner.page, "#undangan #email");
-    await owner.page.getByLabel(/email pasangan/i).fill(uniqueEmail("pasangan"));
+    await waitForHydrated(dialog.locator("#email"));
+    await dialog.getByLabel(/email pasangan/i).fill(uniqueEmail("pasangan"));
     const first = owner.page.waitForResponse(
       (response) => response.request().method() === "POST" && response.url().endsWith("/invite"),
     );
-    await owner.page.getByRole("button", { name: /kirim undangan/i }).click();
+    await dialog.getByRole("button", { name: /kirim undangan/i }).click();
 
     const answered = await first;
     expect(answered.status()).toBe(200);
@@ -54,7 +56,7 @@ test.describe("US-52: sending the pocket invite", () => {
 
     // The panel is the contract of the fallback scenario: an explanation, the code, the
     // join link, and a retry that is not a dead button.
-    const panel = owner.page.getByText("Email belum terkirim.").locator("..");
+    const panel = dialog.getByText("Email belum terkirim.").locator("..");
     await expect(panel).toBeVisible();
     await expect(panel.locator("p.font-mono")).toHaveText(code);
     await expect(panel.getByRole("link")).toHaveAttribute(
@@ -75,7 +77,7 @@ test.describe("US-52: sending the pocket invite", () => {
     expect(sent).toEqual([200, 200]);
     await expect(panel).toBeVisible();
     await expect(retry).toBeEnabled();
-    await expect(owner.page.locator("p.font-mono").first()).toHaveText(code);
+    await expect(dialog.locator("p.font-mono").first()).toHaveText(code);
   });
 
   test("an eleventh send in the hour renders the rate-limit message verbatim", async ({
@@ -84,16 +86,17 @@ test.describe("US-52: sending the pocket invite", () => {
     const owner = await newActor(browser, "owner");
     await signUp(owner.page, "Ayu Batas", uniqueEmail("owner-limit"));
     const { workspaceId, code } = await createWorkspace(owner.page, "Nikah Batas");
+    const dialog = await openInvite(owner.page);
 
     const email = uniqueEmail("pasangan-batas");
-    await waitForInteractive(owner.page, "#undangan #email");
-    await owner.page.getByLabel(/email pasangan/i).fill(email);
+    await waitForHydrated(dialog.locator("#email"));
+    await dialog.getByLabel(/email pasangan/i).fill(email);
     const first = owner.page.waitForResponse(
       (response) => response.request().method() === "POST" && response.url().endsWith("/invite"),
     );
-    await owner.page.getByRole("button", { name: /kirim undangan/i }).click();
+    await dialog.getByRole("button", { name: /kirim undangan/i }).click();
     await first;
-    await expect(owner.page.getByText("Email belum terkirim.")).toBeVisible();
+    await expect(dialog.getByText("Email belum terkirim.")).toBeVisible();
 
     // Attempts 2..10 from the same context: no key, so each is a harmless fallback.
     for (let attempt = 0; attempt < 9; attempt++) {
@@ -108,7 +111,7 @@ test.describe("US-52: sending the pocket invite", () => {
     const denied = owner.page.waitForResponse(
       (response) => response.request().method() === "POST" && response.url().endsWith("/invite"),
     );
-    await owner.page.getByRole("button", { name: /coba kirim lagi/i }).click();
+    await dialog.getByRole("button", { name: /coba kirim lagi/i }).click();
     expect((await denied).status()).toBe(429);
 
     await expect(formAlert(owner.page)).toHaveText(
@@ -116,7 +119,7 @@ test.describe("US-52: sending the pocket invite", () => {
     );
 
     // Refused, but the invite is unaffected: the code is still on screen to share.
-    await expect(owner.page.locator("p.font-mono").first()).toHaveText(code);
+    await expect(dialog.locator("p.font-mono").first()).toHaveText(code);
 
     // The raw contract too: 429, one-hour hint, no account or workspace detail.
     const raw = await owner.page.request.post(`/api/workspaces/${workspaceId}/invite`, {
@@ -136,7 +139,7 @@ test.describe("US-53: joining from the invite link", () => {
   }) => {
     const owner = await newActor(browser, "owner");
     await signUp(owner.page, "Ayu Tautan", uniqueEmail("owner-link"));
-    const { workspaceId, code } = await createWorkspace(owner.page, "Nikah Tautan");
+    const { code } = await createWorkspace(owner.page, "Nikah Tautan");
 
     // The partner has an account but is signed out when the link is opened — the email
     // link arrives in a browser that may or may not hold a session.
@@ -170,7 +173,7 @@ test.describe("US-53: joining from the invite link", () => {
     await expect(partner.page.getByRole("textbox", { name: /kode undangan/i })).toHaveValue(code);
 
     await partner.page.getByRole("button", { name: /gabung ke workspace/i }).click();
-    await partner.page.waitForURL(new RegExp(`/w/${workspaceId}$`), { timeout: 20_000 });
+    await partner.page.waitForURL(/\/dashboard$/, { timeout: 20_000 });
     await expect(partner.page.getByRole("heading", { level: 1 })).toHaveText("Nikah Tautan");
   });
 
@@ -184,14 +187,15 @@ test.describe("US-53: joining from the invite link", () => {
     const partner = await newActor(browser, "partner");
     await signUp(partner.page, "Budi Rotasi", uniqueEmail("partner-rotate"));
 
+    const dialog = await openInvite(owner.page);
     owner.page.once("dialog", (dialog) => dialog.accept());
-    const rotate = owner.page.getByRole("button", { name: /ganti kode undangan/i });
+    const rotate = dialog.getByRole("button", { name: /ganti kode undangan/i });
     await waitForHydrated(rotate);
     await rotate.click();
     await expect(owner.page.getByText(/kode undangan sudah diganti/i)).toBeVisible();
     // `router.refresh()` re-reads the row; under parallel workers the dev server can take
     // a few seconds to answer, so give the new code room to replace the old one.
-    await expect(owner.page.locator("p.font-mono").first()).not.toHaveText(code, {
+    await expect(dialog.locator("p.font-mono").first()).not.toHaveText(code, {
       timeout: 30_000,
     });
 
@@ -219,7 +223,7 @@ test.describe("US-53: joining from the invite link", () => {
     await partner.page.goto(`/join?code=${code}`);
     await waitForInteractive(partner.page, "#code");
     await partner.page.getByRole("button", { name: /gabung ke workspace/i }).click();
-    await partner.page.waitForURL(/\/w\//, { timeout: 20_000 });
+    await partner.page.waitForURL(/\/dashboard$/, { timeout: 20_000 });
 
     const third = await newActor(browser, "third");
     await signUp(third.page, "Citra Penuh", uniqueEmail("third-full"));
@@ -236,7 +240,7 @@ test.describe("US-53: joining from the invite link", () => {
   test("a link for another workspace shows the already-elsewhere message", async ({ browser }) => {
     const ownerA = await newActor(browser, "owner-a");
     await signUp(ownerA.page, "Ayu Satu", uniqueEmail("owner-one"));
-    const { workspaceId: workspaceA, code: codeA } = await createWorkspace(ownerA.page, "Nikah Satu");
+    const { code: codeA } = await createWorkspace(ownerA.page, "Nikah Satu");
 
     const ownerB = await newActor(browser, "owner-b");
     await signUp(ownerB.page, "Budi Dua", uniqueEmail("owner-two"));
@@ -247,7 +251,7 @@ test.describe("US-53: joining from the invite link", () => {
     await guest.page.goto(`/join?code=${codeA}`);
     await waitForInteractive(guest.page, "#code");
     await guest.page.getByRole("button", { name: /gabung ke workspace/i }).click();
-    await guest.page.waitForURL(new RegExp(`/w/${workspaceA}$`), { timeout: 20_000 });
+    await guest.page.waitForURL(/\/dashboard$/, { timeout: 20_000 });
 
     // Own workspace's code again: told it is already a member here.
     await guest.page.goto(`/join?code=${codeA}`);
@@ -286,16 +290,17 @@ test.describe("US-52: log hygiene", () => {
     const owner = await newActor(browser, "owner");
     await signUp(owner.page, "Ayu Log", uniqueEmail("owner-log"));
     const { code } = await createWorkspace(owner.page, "Nikah Log");
+    const dialog = await openInvite(owner.page);
 
     const recipient = uniqueEmail("pasangan-log");
-    await waitForInteractive(owner.page, "#undangan #email");
-    await owner.page.getByLabel(/email pasangan/i).fill(recipient);
+    await waitForHydrated(dialog.locator("#email"));
+    await dialog.getByLabel(/email pasangan/i).fill(recipient);
     const answered = owner.page.waitForResponse(
       (response) => response.request().method() === "POST" && response.url().endsWith("/invite"),
     );
-    await owner.page.getByRole("button", { name: /kirim undangan/i }).click();
+    await dialog.getByRole("button", { name: /kirim undangan/i }).click();
     expect((await answered).status()).toBe(200);
-    await expect(owner.page.getByText("Email belum terkirim.")).toBeVisible();
+    await expect(dialog.getByText("Email belum terkirim.")).toBeVisible();
 
     // Positive control: the surface is real and carries this attempt's log line, so the
     // absence assertions below are not passing against an empty or stale file.

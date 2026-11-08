@@ -170,7 +170,7 @@ async function KomitmenContent() {
                           style={{ width: `${Math.min(100, percent(paid, total))}%` }}
                         />
                       </div>
-                      <p className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2 text-small tabular-nums text-ink-muted">
+                      <div className="mt-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2 text-small tabular-nums text-ink-muted">
                         <span>Terbayar {formatRupiah(paid)}</span>
                         <span className="flex flex-wrap items-center justify-end gap-3">
                           <span className={overpaid > 0 ? "font-semibold text-ink" : undefined}>
@@ -191,7 +191,7 @@ async function KomitmenContent() {
                             }}
                           />
                         </span>
-                      </p>
+                      </div>
                     </li>
                   );
                 })}

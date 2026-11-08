@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import type { Db } from "../db/index.ts";
 import { entitlementGrants, imports } from "../db/schema.ts";
 import { ENTITLEMENT_MESSAGE } from "./messages.ts";
+import { paymentEnabled } from "./payment.ts";
 
 /** Allowed, or refused with the one unlock message the UI renders verbatim. */
 export type Gate = { ok: true } | { ok: false; message: string };
@@ -27,6 +28,9 @@ export async function hasPaidAccess(db: Db, workspaceId: string): Promise<boolea
  * never disagree with what the user sees. Every later import needs a grant.
  */
 export async function importGate(db: Db, workspaceId: string): Promise<Gate> {
+  // Payment is off until a gateway is chosen (B-3): the free tier is unlimited.
+  if (!paymentEnabled()) return { ok: true };
+
   if (await hasPaidAccess(db, workspaceId)) return { ok: true };
 
   const [priorImport] = await db
@@ -40,6 +44,9 @@ export async function importGate(db: Db, workspaceId: string): Promise<Gate> {
 
 /** US-38: export is paid-only — even a workspace that has imported nothing. */
 export async function exportGate(db: Db, workspaceId: string): Promise<Gate> {
+  // Payment is off until a gateway is chosen (B-3): export is free for now.
+  if (!paymentEnabled()) return { ok: true };
+
   return (await hasPaidAccess(db, workspaceId))
     ? { ok: true }
     : { ok: false, message: ENTITLEMENT_MESSAGE.locked };

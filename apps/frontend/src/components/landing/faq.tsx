@@ -20,8 +20,9 @@ const QUESTIONS = [
   },
   {
     question: "Apakah ini langganan?",
+    // TODO(payment): drop the "pembelian belum tersedia" tail when PAYMENT_ENABLED — see docs/projects/NOTE-payment-disabled.md
     answer:
-      `Bukan. Sekali bayar per pernikahan: ${INTRO_PRICE} harga perkenalan, ${LIST_PRICE} setelahnya. Tidak ada tagihan berulang dan tidak ada biaya per anggota.`,
+      `Bukan. Rencananya sekali bayar per pernikahan: ${INTRO_PRICE} harga perkenalan, ${LIST_PRICE} setelahnya, tanpa tagihan berulang dan tanpa biaya per anggota. Untuk sementara pembelian belum tersedia, jadi semua fitur terbuka tanpa biaya.`,
   },
   {
     question: "Bagaimana kalau saldonya tidak cocok?",

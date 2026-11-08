@@ -4,7 +4,8 @@ import { Capabilities } from "@/components/landing/capabilities";
 import { Close } from "@/components/landing/close";
 import { Faq } from "@/components/landing/faq";
 import { Hero } from "@/components/landing/hero";
-import { Pricing } from "@/components/landing/pricing";
+// TODO(payment): disabled until payment gateway chosen — see docs/projects/NOTE-payment-disabled.md
+// import { Pricing } from "@/components/landing/pricing";
 import { Reveal } from "@/components/landing/reveal";
 import { Steps } from "@/components/landing/steps";
 
@@ -19,7 +20,8 @@ export default function Home() {
       <Hero />
       <Steps />
       <Capabilities />
-      <Pricing />
+      {/* TODO(payment): disabled until payment gateway chosen — see docs/projects/NOTE-payment-disabled.md */}
+      {/* <Pricing /> */}
       <Faq />
       <Close />
     </main>

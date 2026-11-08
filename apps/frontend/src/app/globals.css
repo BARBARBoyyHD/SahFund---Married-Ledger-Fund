@@ -259,6 +259,24 @@
     }
   }
 
+  /* The one horizontal-scroll container for data tables (TableScroll). The component
+     adds role="region" + tabindex so keyboard users can pan it with the arrow keys. */
+  .table-scroll {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-emerald-shade) transparent;
+  }
+
+  /* Below lg the width floor makes a table overflow instead of squeezing its columns;
+     at lg+ the table keeps its old fluid width (no scrollbar appears on desktop). */
+  @media (max-width: 1023.98px) {
+    .table-scroll > table {
+      min-width: 36rem;
+    }
+  }
+
   /* Phone shell (docs/ui/html/design.html): below lg the dashboard owns the viewport,
      the inner pane is the only scroller and the document cannot scroll, so the menu bar
      and the page frame stay put. `100vh` first is the fallback for browsers without

@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { Suspense, type ReactNode } from "react";
 
 import { PageSkeleton } from "@/components/app/skeleton";
+import { TableScroll } from "@/components/app/table-scroll";
 import { LINK } from "@/components/app/ui";
 import { Container } from "@/components/landing/ui";
 import { Wordmark } from "@/components/mark";
@@ -204,7 +205,10 @@ async function ShareReport({ params }: { params: Promise<{ token: string }> }) {
                   Belum ada kategori atau anggaran yang dicatat.
                 </p>
               ) : (
-                <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
+                <TableScroll
+                  label="Tabel anggaran per kategori"
+                  className="card-sheen mt-4 p-4"
+                >
                   <table className="w-full text-left text-small">
                     <caption className="sr-only">
                       Anggaran, komitmen, terbayar, dan sisa per kategori, dengan baris total
@@ -288,7 +292,7 @@ async function ShareReport({ params }: { params: Promise<{ token: string }> }) {
                       </tr>
                     </tfoot>
                   </table>
-                </div>
+                </TableScroll>
               )}
             </section>
 

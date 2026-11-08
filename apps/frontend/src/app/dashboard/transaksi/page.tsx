@@ -5,6 +5,7 @@ import { Suspense, type ReactNode } from "react";
 
 import { SignOutButton } from "@/components/app/sign-out-button";
 import { PageSkeleton } from "@/components/app/skeleton";
+import { TableScroll } from "@/components/app/table-scroll";
 import { BUTTON_SMALL, LINK } from "@/components/app/ui";
 import { BUTTON_PRIMARY } from "@/components/landing/ui";
 import { jakartaDay } from "@/core/dashboard";
@@ -294,8 +295,8 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
                 )}
               />
 
-              <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
-                <table id="daftar-transaksi-tabel" className="w-full min-w-[44rem] text-left text-small">
+              <TableScroll label="Tabel daftar transaksi" className="card-sheen mt-4 p-4">
+                <table id="daftar-transaksi-tabel" className="w-full text-left text-small">
                   <caption className="sr-only">
                     Daftar transaksi, terbaru dulu. Pilih transaksi lewat kotak centang
                     untuk menandainya ke satu anggota, atau ubah kategori dan anggotanya per
@@ -412,7 +413,7 @@ async function TransaksiContent({ searchParams }: { searchParams: SearchParams }
                     })}
                   </tbody>
                 </table>
-              </div>
+              </TableScroll>
             </>
           )}
         </section>

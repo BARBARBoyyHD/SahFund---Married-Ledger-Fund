@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { AppHeader } from "@/components/app/app-header";
 import { SignOutButton } from "@/components/app/sign-out-button";
+import { TableScroll } from "@/components/app/table-scroll";
 import { LINK } from "@/components/app/ui";
 import { BUTTON_PRIMARY, BUTTON_SECONDARY, Container, Eyebrow } from "@/components/landing/ui";
 import {
@@ -637,8 +638,11 @@ export async function DashboardContent() {
                   {budgetRows.length === 0 ? (
                     <EmptyState>Belum ada kategori di workspace ini.</EmptyState>
                   ) : (
-                    <div className="card-sheen mt-4 overflow-x-auto rounded-sm border border-gold/35 p-4">
-                      <table className="w-full min-w-[32rem] text-left text-small">
+                    <TableScroll
+                      label="Tabel anggaran dan realisasi per pos"
+                      className="card-sheen mt-4 p-4"
+                    >
+                      <table className="w-full text-left text-small">
                         <caption className="sr-only">
                           Anggaran, realisasi, dan sisa alokasi per pos perhelatan
                         </caption>
@@ -700,7 +704,7 @@ export async function DashboardContent() {
                           })}
                         </tbody>
                       </table>
-                    </div>
+                    </TableScroll>
                   )}
                 </section>
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getDb } from "@/lib/db";
 import { grantEntitlement } from "@/lib/entitlement/grant";
+import { ENTITLEMENT_MESSAGE } from "@/lib/entitlement/messages";
+import { paymentEnabled } from "@/lib/entitlement/payment";
 import { grantEntitlementSchema } from "@/lib/entitlement/schema";
 import { invalid, logFailure, unavailable } from "@/lib/http";
 import { membershipForApi } from "@/lib/membership";
@@ -14,6 +16,11 @@ import { membershipForApi } from "@/lib/membership";
  * (AGENTS §3): a duplicate order is a no-op, never a second unlock.
  */
 export async function POST(request: Request) {
+  // Payment is off until a gateway is chosen (B-3): nothing to sell, nothing granted.
+  if (!paymentEnabled()) {
+    return NextResponse.json({ message: ENTITLEMENT_MESSAGE.paymentDisabled }, { status: 503 });
+  }
+
   const body: unknown = await request.json().catch(() => null);
   const parsed = grantEntitlementSchema.safeParse(body ?? {});
   if (!parsed.success) return invalid(parsed.error);

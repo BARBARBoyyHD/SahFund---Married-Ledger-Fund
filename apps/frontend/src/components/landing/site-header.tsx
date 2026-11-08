@@ -6,7 +6,7 @@ import { Container } from "@/components/landing/ui";
 const LINKS = [
   { href: "#cara-kerja", label: "Cara kerja" },
   { href: "#yang-dicatat", label: "Yang dicatat" },
-  { href: "#harga", label: "Harga" },
+  // TODO(payment): re-add { href: "#harga", label: "Harga" } when PAYMENT_ENABLED — see docs/projects/NOTE-payment-disabled.md
 ];
 
 /**

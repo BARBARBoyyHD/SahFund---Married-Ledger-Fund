@@ -14,6 +14,11 @@ import { EXPORT_HEADER, readExportRows, transactionsToCsv } from "../../src/lib/
 // fixed member (see test/helpers/route-loader.mjs).
 register(new URL("../helpers/route-loader.mjs", import.meta.url).href, import.meta.url);
 
+// Payment is off by default while the gateway is undecided (B-3, see
+// docs/projects/NOTE-payment-disabled.md); these tests cover the enforced rules, so
+// they opt in before any gate call. Each test file runs in its own process.
+process.env.PAYMENT_ENABLED = "1";
+
 /**
  * Entitlement against real SQLite (US-35, US-37, US-38): the grant is idempotent per
  * order on the unique index, the free tier ends after one import, and the export is
